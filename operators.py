@@ -1,18 +1,17 @@
 import bpy, bmesh
-import os, subprocess, time, tempfile, threading
+import os, subprocess, time, tempfile, threading, re
 from .basic_functions import show_progress
+from collections import Counter
 
 def parse_config_file(file_path):
     config_dict = {}
     
     with open(file_path, 'r') as file:
         for line in file:
-            # Skip comments and empty lines
             line = line.strip()
             if line.startswith('#') or not line:
                 continue
             
-            # Split the line into key and value
             key, value = line.split('=', 1)
             config_dict[key.strip()] = value.strip()
     
@@ -37,8 +36,13 @@ class ExecutePrusaSlicerOperator(bpy.types.Operator):
         printer = config_dict['printer_settings_id']
 
         selected_objects = context.selected_objects
-        object_names = sorted([obj.name for obj in selected_objects])
-        base_filename = "-".join(object_names)
+
+        object_names = [re.sub(r'\.\d{0,3}$', '', obj.name) for obj in selected_objects]
+        name_counter = Counter(object_names)
+        final_names = [f"{count}x_{name}" if count > 1 else name for name, count in name_counter.items()]
+        final_names.sort()
+
+        base_filename = "-".join(final_names)
 
         temp_dir = tempfile.gettempdir() 
         stl_file_path = os.path.join(temp_dir, base_filename + ".stl")
@@ -56,7 +60,7 @@ class ExecutePrusaSlicerOperator(bpy.types.Operator):
             command = [
                 "--load", os.path.join(template_absolute_path), 
                 "-g", os.path.join(stl_file_path), 
-                "--output", f"{gcode_dir}/{base_filename}-{filament}-{printer}.gcode"
+                "--output", os.path.join(gcode_dir, f"{base_filename}-{filament}-{printer}.gcode")
             ]
 
         if self.mode == "open":
@@ -85,14 +89,12 @@ def run_prusaslicer(command):
     except subprocess.CalledProcessError as e:
         print(f"Command failed with return code {e.returncode}")
 
-        # Print standard error (if any) for more context
         if e.stderr:
             print("PrusaSlicer error output:")
             print(e.stderr)
 
         return {'CANCELLED'}
 
-    # If the command succeeded, you might want to print the standard output (if any)
     if result.stdout:
         print("PrusaSlicer output:")
         print(result.stdout)
