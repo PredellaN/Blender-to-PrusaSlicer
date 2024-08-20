@@ -20,7 +20,9 @@ Custom Configurations: Load and apply custom PrusaSlicer configuration files (.i
 ## Usage
 - Load a custom configuration file (.ini) for slicing settings. You can export the configuration file from a prusaslicer project using File > Export > Export Config
 - Select the objects to slice in Blender.
-- Click "Slice" to generate G-code or "Open with PrusaSlicer" to view the model in PrusaSlicer.
+- Find the PrusaSlicer section in the Scene menu
+![image](https://github.com/user-attachments/assets/b90e713d-3cde-4484-ae30-5235b66fdc91)
+- Click "Slice" to generate G-code (it will be saved in the same folder as the .blend file) or "Open with PrusaSlicer" to view the model in PrusaSlicer.
 
 ## Requirements
 - Blender 4.2.0 or higher.
