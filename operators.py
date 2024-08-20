@@ -53,7 +53,7 @@ class ExecutePrusaSlicerOperator(bpy.types.Operator):
         else:
             gcode_dir = os.path.join(temp_dir)
 
-        bpy.ops.export_mesh.stl(filepath=stl_file_path, global_scale=1000, use_selection=True)
+        bpy.ops.wm.stl_export(filepath=stl_file_path, global_scale=1000, export_selected_objects=True)
 
         if self.mode == "slice":
             show_progress(ws, ws.bps, 30, 'Slicing with PrusaSlicer...')
@@ -79,7 +79,10 @@ def run_prusaslicer(command):
     preferences = bpy.context.preferences.addons[__package__].preferences
     prusaslicer_path = preferences.prusaslicer_path
 
-    command=[*prusaslicer_path.split() + command]
+    if os.path.exists(prusaslicer_path):
+        command=[f'{prusaslicer_path}'] + command
+    else:
+        command=[*prusaslicer_path.split() + command]
 
     print(f"Running command: {' '.join(command)}")
 
