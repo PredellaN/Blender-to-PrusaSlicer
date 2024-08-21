@@ -1,21 +1,38 @@
-import bpy, bmesh
+import bpy # type: ignore
 import os, subprocess, time, tempfile, threading, re
-from .basic_functions import show_progress
 from collections import Counter
+import urllib.request
+from .basic_functions import show_progress
 
-def parse_config_file(file_path):
+temp_dir = tempfile.gettempdir() 
+
+def parse_config_file(file_path_or_url):
     config_dict = {}
+
+    if file_path_or_url.startswith('http://') or file_path_or_url.startswith('https://'):
+        response = urllib.request.urlopen(file_path_or_url)
+        file_content = response.read().decode('utf-8')
+
+        config_local_path = os.path.join(temp_dir, 'config.ini')
+        with open(config_local_path, 'w') as file:
+            file.write(file_content)
+
+    else:
+        config_local_path = bpy.path.abspath(file_path_or_url)
+
+    with open(config_local_path, 'r') as file:
+        lines = file.readlines()
+
+    for line in lines:
+        line = line.strip()
+        if line.startswith('#') or not line:
+            continue
+
+        key, value = line.split('=', 1)
+        config_dict[key.strip()] = value.strip()
+
     
-    with open(file_path, 'r') as file:
-        for line in file:
-            line = line.strip()
-            if line.startswith('#') or not line:
-                continue
-            
-            key, value = line.split('=', 1)
-            config_dict[key.strip()] = value.strip()
-    
-    return config_dict
+    return config_local_path, config_dict
 
 class ExecutePrusaSlicerOperator(bpy.types.Operator):
     bl_idname = "bps.slice"
@@ -30,8 +47,8 @@ class ExecutePrusaSlicerOperator(bpy.types.Operator):
 
         show_progress(ws, ws.bps, 0, "Exporting STL...")
 
-        template_absolute_path = bpy.path.abspath(ws.bps.config)
-        config_dict = parse_config_file(template_absolute_path)
+        config_path, config_dict = parse_config_file(ws.bps.config)
+        
         filament = config_dict['filament_type']
         printer = config_dict['printer_settings_id']
 
@@ -44,7 +61,6 @@ class ExecutePrusaSlicerOperator(bpy.types.Operator):
 
         base_filename = "-".join(final_names)
 
-        temp_dir = tempfile.gettempdir() 
         stl_file_path = os.path.join(temp_dir, base_filename + ".stl")
 
         file_directory = os.path.dirname(bpy.data.filepath)
@@ -58,7 +74,7 @@ class ExecutePrusaSlicerOperator(bpy.types.Operator):
         if self.mode == "slice":
             show_progress(ws, ws.bps, 30, 'Slicing with PrusaSlicer...')
             command = [
-                "--load", os.path.join(template_absolute_path), 
+                "--load", os.path.join(config_path), 
                 "-g", os.path.join(stl_file_path), 
                 "--output", os.path.join(gcode_dir, f"{base_filename}-{filament}-{printer}.gcode")
             ]
@@ -66,7 +82,7 @@ class ExecutePrusaSlicerOperator(bpy.types.Operator):
         if self.mode == "open":
             show_progress(ws, ws.bps, 30, 'Opening PrusaSlicer...')
             command = [
-                "--load", os.path.join(template_absolute_path), 
+                "--load", os.path.join(config_path), 
                 os.path.join(stl_file_path)
             ]
 
