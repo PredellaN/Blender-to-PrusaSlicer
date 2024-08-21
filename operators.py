@@ -1,12 +1,13 @@
 import bpy # type: ignore
-import os, subprocess, time, tempfile, threading, re
+import os, subprocess, time, tempfile, threading, re, json
 from collections import Counter
 import urllib.request
-from .basic_functions import show_progress
+
+from .functions.basic_functions import show_progress
 
 temp_dir = tempfile.gettempdir() 
 
-def parse_config_file(file_path_or_url):
+def load_config_file(file_path_or_url):
     config_dict = {}
 
     if file_path_or_url.startswith('http://') or file_path_or_url.startswith('https://'):
@@ -31,6 +32,19 @@ def parse_config_file(file_path_or_url):
         key, value = line.split('=', 1)
         config_dict[key.strip()] = value.strip()
 
+    # Convert the dictionary to a JSON string
+    json_content = json.dumps(config_dict, indent=4)
+
+    # Check if the text block exists, and overwrite if it does
+    text_block_name = "prusaslicer_configuration.json"
+    if text_block_name in bpy.data.texts:
+        text_block = bpy.data.texts[text_block_name]
+        text_block.clear()
+    else:
+        text_block = bpy.data.texts.new(name=text_block_name)
+
+    # Write the JSON content to the text block
+    text_block.from_string(json_content)
     
     return config_local_path, config_dict
 
@@ -47,7 +61,7 @@ class ExecutePrusaSlicerOperator(bpy.types.Operator):
 
         show_progress(ws, ws.bps, 0, "Exporting STL...")
 
-        config_path, config_dict = parse_config_file(ws.bps.config)
+        config_path, config_dict = load_config_file(ws.bps.config)
         
         filament = config_dict['filament_type']
         printer = config_dict['printer_settings_id']

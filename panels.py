@@ -1,5 +1,5 @@
 import bpy
-from .basic_functions import BasePanel
+from .functions.basic_functions import BasePanel
 
 class PrusaSlicerPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
