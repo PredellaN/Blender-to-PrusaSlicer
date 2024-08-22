@@ -1,4 +1,5 @@
 import time
+import subprocess, os, psutil, platform
 import bpy
 
 import cProfile
@@ -26,6 +27,14 @@ class BasePanel(bpy.types.Panel):
 
     def draw(self, context):
         pass
+
+def is_usb_device(partition):
+    if platform.system() == "Windows":
+        # On Windows, USB drives often have 'removable' in their fstype
+        return 'removable' in partition.opts.lower()
+    else:
+        # On Linux, checking for 'usb' in opts or '/media' in mountpoint
+        return 'usb' in partition.opts or "/media" in partition.mountpoint
 
 def show_progress(ws, ref, progress, progress_text = ""):
     setattr(ref, 'progress', progress)

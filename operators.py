@@ -33,11 +33,38 @@ class ParamRemoveOperator(bpy.types.Operator):
         control_list.remove(self.item_index)
         return {'FINISHED'}
 
+class UnmountUsbOperator(bpy.types.Operator):
+    bl_idname = f"{WS_ATTRIBUTE_NAME}.unmount_usb"
+    bl_label = "Unmount USB"
+    mountpoint: bpy.props.StringProperty()  # type: ignore
+
+    def execute(self, context):
+        try:
+            if os.name == 'nt':
+                result = os.system(f'mountvol {self.mountpoint} /D')
+            else:
+                # Use subprocess to capture output
+                result = subprocess.run(['umount', self.mountpoint], capture_output=True, text=True)
+                
+                if result.returncode != 0:
+                    if 'target is busy' in result.stderr:
+                        self.report({'ERROR'}, f"Failed to unmount {self.mountpoint}: device busy")
+                    else:
+                        self.report({'ERROR'}, f"Failed to unmount {self.mountpoint}: {result.stderr}")
+                    return {'CANCELLED'}
+            
+            self.report({'INFO'}, f"Successfully unmounted {self.mountpoint}")
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to unmount {self.mountpoint}: {str(e)}")
+            return {'CANCELLED'}
+
+        return {'FINISHED'}
 class RunPrusaSlicerOperator(bpy.types.Operator):
     bl_idname = f"{WS_ATTRIBUTE_NAME}.slice"
     bl_label = "Run PrusaSlicer"
 
-    mode: bpy.props.StringProperty(name="") # type: ignore
+    mode: bpy.props.StringProperty(name="", default="slice") # type: ignore
+    mountpoint: bpy.props.StringProperty(name="", default="") # type: ignore
     
     def execute(self, context):
         ws = context.workspace
@@ -66,7 +93,10 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         stl_file_path = os.path.join(temp_dir, base_filename + ".stl")
 
         file_directory = os.path.dirname(bpy.data.filepath)
-        if file_directory:
+
+        if self.mountpoint:
+            gcode_dir = self.mountpoint
+        elif file_directory:
             gcode_dir = file_directory
         else:
             gcode_dir = temp_dir

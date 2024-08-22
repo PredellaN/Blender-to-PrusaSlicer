@@ -1,6 +1,7 @@
 import bpy # type: ignore
-from .functions.basic_functions import BasePanel
+from .functions.basic_functions import BasePanel, is_usb_device
 from .constants import WS_ATTRIBUTE_NAME
+import psutil
 
 class PRUSASLICER_UL_IdValue(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -49,7 +50,26 @@ class PrusaSlicerPanel(BasePanel):
         row.prop(prop_group, "progress", text=prop_group.progress_text, slider=True)
         row.enabled = False
 
-        ###
+        ### USB Devices
+
+        partitions = psutil.disk_partitions()
+
+        for partition in partitions:
+            if is_usb_device(partition):
+                row = layout.row()
+                row.label(text="Detected USB Devices:")
+                break
+
+        for partition in partitions:
+            if is_usb_device(partition):
+                row = layout.row()
+                mountpoint = partition.mountpoint
+                row.enabled = False if prop_group.running else True
+                row.operator(f"{WS_ATTRIBUTE_NAME}.unmount_usb", text="", icon='UNLOCKED').mountpoint=mountpoint
+                row.operator(f"{WS_ATTRIBUTE_NAME}.slice", text="", icon='DISK_DRIVE').mountpoint=mountpoint
+                row.label(text=f"{mountpoint.split('/')[-1]} mounted at {mountpoint} ({partition.device})")
+
+        ### Config Overrides
 
         row = layout.row()
         row.label(text="Configuration Overrides")
@@ -61,4 +81,3 @@ class PrusaSlicerPanel(BasePanel):
                 )
         row = layout.row()
         row.operator(f"{WS_ATTRIBUTE_NAME}.add_param")
-
