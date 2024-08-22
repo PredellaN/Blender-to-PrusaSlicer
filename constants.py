@@ -1,0 +1,1 @@
+WS_ATTRIBUTE_NAME = "bps"

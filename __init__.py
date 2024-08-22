@@ -12,6 +12,8 @@ from . import operators as op
 from . import panels as pn
 from . import property_groups as pg
 
+WS_ATTRIBUTE_NAME = "bps"
+
 classes_to_register = []
 for module in [op,pn,pg]:
     importlib.reload(module)
@@ -33,7 +35,7 @@ def register():
     for class_to_register in classes_to_register:
         register_class(class_to_register)
 
-    bpy.types.WorkSpace.bps = bpy.props.PointerProperty(type=pg.PrusaPropertyGroup)
+    setattr(bpy.types.WorkSpace, WS_ATTRIBUTE_NAME, bpy.props.PointerProperty(type=pg.PrusaSlicerPropertyGroup))
 
 def unregister():
     for class_to_register in classes_to_register:
