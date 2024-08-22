@@ -132,7 +132,10 @@ def run_prusaslicer(command):
                 error_part = line.lower().split("[error]", 1)[1].strip()
                 return error_part
             
-        return
+            if "slicing result exported" in line.lower():
+                return
+            
+        return "No error message returned, check your model size"
 
 def do_slice(command, ws, temp_files):
     
