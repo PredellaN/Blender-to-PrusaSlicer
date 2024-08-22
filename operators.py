@@ -124,21 +124,29 @@ def run_prusaslicer(command):
             print("PrusaSlicer error output:")
             print(e.stderr)
 
-        return {'CANCELLED'}
-
     if result.stdout:
         print("PrusaSlicer output:")
         print(result.stdout)
+        for line in result.stdout.splitlines():
+            if "[error]" in line.lower():
+                error_part = line.lower().split("[error]", 1)[1].strip()
+                return error_part
+            
+        return
 
 def do_slice(command, ws, temp_files):
     
     start_time = time.time()
-    run_prusaslicer(command)
+    res = run_prusaslicer(command)
     end_time = time.time()
 
     delete_tempfiles(temp_files)
 
-    show_progress(ws, getattr(ws, WS_ATTRIBUTE_NAME), 100, f'Done (in {(end_time - start_time):.2f}s)')
+    if res:
+        show_progress(ws, getattr(ws, WS_ATTRIBUTE_NAME), 100, f'Failed ({res})')
+    else:
+        show_progress(ws, getattr(ws, WS_ATTRIBUTE_NAME), 100, f'Done (in {(end_time - start_time):.2f}s)')
+
     getattr(ws, WS_ATTRIBUTE_NAME).running = 0
 
     return {'FINISHED'}

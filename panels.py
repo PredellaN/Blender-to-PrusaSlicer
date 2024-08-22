@@ -2,7 +2,7 @@ import bpy # type: ignore
 from .functions.basic_functions import BasePanel
 from .constants import WS_ATTRIBUTE_NAME
 
-class Generic_UL_IdValue(bpy.types.UIList):
+class PRUSASLICER_UL_IdValue(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         row = layout.row()
 
@@ -29,7 +29,7 @@ class PrusaSlicerPreferences(bpy.types.AddonPreferences):
 
 
 class PrusaSlicerPanel(BasePanel):
-    bl_label = "PrusaSlicer"
+    bl_label = "Blender to PrusaSlicer"
     bl_idname = "SCENE_PT_PrusaSlicerPanel"
 
     def draw(self, context):
@@ -55,7 +55,7 @@ class PrusaSlicerPanel(BasePanel):
         row.label(text="Configuration Overrides")
 
         row = layout.row()
-        row.template_list(f"Generic_UL_IdValue", "Params",
+        row.template_list(f"PRUSASLICER_UL_IdValue", "Params",
                 prop_group, f"list",
                 prop_group, f"list_index"
                 )
