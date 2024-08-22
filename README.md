@@ -15,6 +15,7 @@ Custom Configurations: Load and apply custom PrusaSlicer configuration files (.i
 - Open Blender and go to Edit > Preferences > Add-ons.
 - Click Install and select the .zip file of the addon.
 - Enable the addon in the preferences.
+- Install psutil using "pip install psutil" in the addon's python environment (detailed instructions provided soon, auto-install will follow)
 - In the Addon configuration, specify the path to the PrusaSlicer executable. Also commands (such as flatpak run) are supported.
 
 ## Usage
