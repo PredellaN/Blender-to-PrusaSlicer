@@ -3,7 +3,7 @@
 ![image](https://github.com/user-attachments/assets/a8722c22-4711-4717-a267-c1d2330d9729)
 
 ## Overview
-This Blender addon integrates PrusaSlicer directly within Blender, allowing for seamless 3D model slicing and export to G-code without leaving the Blender environment.
+This Blender add-on integrates PrusaSlicer directly within Blender, allowing for seamless 3D model slicing and export to G-code without leaving the Blender environment.
 
 ## Features
 PrusaSlicer Integration: Slice models and open them in PrusaSlicer directly from Blender.
@@ -13,10 +13,10 @@ Custom Configurations: Load and apply custom PrusaSlicer configuration files (.i
 ## Installation
 - Clone or download this repository.
 - Open Blender and go to Edit > Preferences > Add-ons.
-- Click Install and select the .zip file of the addon.
-- Enable the addon in the preferences.
-- Install psutil using "pip install psutil" in the addon's python environment (detailed instructions provided soon, auto-install will follow)
-- In the Addon configuration, specify the path to the PrusaSlicer executable. Also commands (such as flatpak run) are supported.
+- Click Install and select the .zip file of the add-on.
+- Enable the add-on in the preferences.
+- Install psutil using the "Install dependencies" button in the add-on preferences
+- In the add-on preferences also specify the path to the PrusaSlicer executable. Commands (such as flatpak run) are also supported.
 
 ## Usage
 - Load a custom configuration file (.ini) for slicing settings. You can export the configuration file from a PrusaSlicer project using File > Export > Export Config. URLs are also supported.
