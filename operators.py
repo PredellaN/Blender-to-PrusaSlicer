@@ -4,37 +4,37 @@ from collections import Counter
 
 from .functions.basic_functions import show_progress
 from .functions import blender_funcs as bf
-from .constants import WS_ATTRIBUTE_NAME
+from .constants import PG_NAME
 
 temp_dir = tempfile.gettempdir()
 
 class ParamAddOperator(bpy.types.Operator):
-    bl_idname = f"{WS_ATTRIBUTE_NAME}.add_param"
+    bl_idname = f"{PG_NAME}.add_param"
     bl_label = "Add Parameter"
 
     def execute(self, context):
         ws = context.workspace
-        prop_group = getattr(ws, WS_ATTRIBUTE_NAME)
+        prop_group = getattr(ws, PG_NAME)
 
         control_list = getattr(prop_group, f'list')
         control_list.add()
         return {'FINISHED'}
 
 class ParamRemoveOperator(bpy.types.Operator):
-    bl_idname = f"{WS_ATTRIBUTE_NAME}.remove_param"
+    bl_idname = f"{PG_NAME}.remove_param"
     bl_label = "Remove Parameter"
     item_index: bpy.props.IntProperty() # type: ignore
 
     def execute(self, context):
         ws = context.workspace
-        prop_group = getattr(ws, WS_ATTRIBUTE_NAME)
+        prop_group = getattr(ws, PG_NAME)
 
         control_list = getattr(prop_group, f'list')
         control_list.remove(self.item_index)
         return {'FINISHED'}
 
 class UnmountUsbOperator(bpy.types.Operator):
-    bl_idname = f"{WS_ATTRIBUTE_NAME}.unmount_usb"
+    bl_idname = f"{PG_NAME}.unmount_usb"
     bl_label = "Unmount USB"
     mountpoint: bpy.props.StringProperty()  # type: ignore
 
@@ -60,7 +60,7 @@ class UnmountUsbOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 class RunPrusaSlicerOperator(bpy.types.Operator):
-    bl_idname = f"{WS_ATTRIBUTE_NAME}.slice"
+    bl_idname = f"{PG_NAME}.slice"
     bl_label = "Run PrusaSlicer"
 
     mode: bpy.props.StringProperty(name="", default="slice") # type: ignore
@@ -68,7 +68,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
     
     def execute(self, context):
         ws = context.workspace
-        prop_group = getattr(ws, WS_ATTRIBUTE_NAME)
+        prop_group = getattr(ws, PG_NAME)
 
         prop_group.running = 1
 
@@ -176,10 +176,10 @@ def do_slice(command, ws, temp_files):
     delete_tempfiles(temp_files)
 
     if res:
-        show_progress(ws, getattr(ws, WS_ATTRIBUTE_NAME), 100, f'Failed ({res})')
+        show_progress(ws, getattr(ws, PG_NAME), 100, f'Failed ({res})')
     else:
-        show_progress(ws, getattr(ws, WS_ATTRIBUTE_NAME), 100, f'Done (in {(end_time - start_time):.2f}s)')
+        show_progress(ws, getattr(ws, PG_NAME), 100, f'Done (in {(end_time - start_time):.2f}s)')
 
-    getattr(ws, WS_ATTRIBUTE_NAME).running = 0
+    getattr(ws, PG_NAME).running = 0
 
     return {'FINISHED'}

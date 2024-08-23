@@ -1,24 +1,6 @@
-import bpy, sys, os
-from bpy.utils import register_class, unregister_class
-
-script_dir = os.path.dirname(os.path.abspath(__file__))
-venv_path = os.path.join(script_dir, 'dependencies')
-sys.path.append(venv_path)
-
-import importlib
-import inspect
-
-from . import operators as op
-from . import panels as pn
-from . import property_groups as pg
-
-WS_ATTRIBUTE_NAME = "bps"
-
-classes_to_register = []
-for module in [op,pn,pg]:
-    importlib.reload(module)
-    classes_in_module = [cls for name, cls in inspect.getmembers(module, inspect.isclass) if cls.__module__ == module.__name__ ]
-    classes_to_register.extend(classes_in_module)
+import bpy
+from .functions import modules as mod
+from .constants import PG_NAME, DEPENDENCIES
 
 bl_info = {
     "name" : "Blender to PrusaSlicer",
@@ -32,14 +14,29 @@ bl_info = {
 }
 
 def register():
-    for class_to_register in classes_to_register:
-        register_class(class_to_register)
 
-    setattr(bpy.types.WorkSpace, WS_ATTRIBUTE_NAME, bpy.props.PointerProperty(type=pg.PrusaSlicerPropertyGroup))
+    from . import preferences as pref
+    mod.register_classes(mod.get_classes([pref]))
+
+    try:
+        for dependency in DEPENDENCIES:
+            mod.import_module(module_name=dependency.module, global_name=dependency.name)
+    except ModuleNotFoundError:
+        return
+
+    from . import operators as op
+    from . import panels as pn
+    from . import property_groups as pg
+    mod.register_classes(mod.get_classes([op,pn,pg]))
+
+    setattr(bpy.types.WorkSpace, PG_NAME, bpy.props.PointerProperty(type=pg.PrusaSlicerPropertyGroup))
 
 def unregister():
-    for class_to_register in classes_to_register:
-        unregister_class(class_to_register)
+    from . import preferences as pref
+    from . import operators as op
+    from . import panels as pn
+    from . import property_groups as pg
+    mod.unregister_classes(mod.get_classes([op,pn,pg,pref]))
 
 if __name__ == "__main__":
     register()

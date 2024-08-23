@@ -1,10 +1,15 @@
+import bpy
+
 import time
 import subprocess, os, psutil, platform
-import bpy
 
 import cProfile
 import pstats
 import io
+
+from collections import namedtuple
+
+Dependency = namedtuple("Dependency", ["module", "package", "name"])
 
 class BasePanel(bpy.types.Panel):
     bl_label = "Default Panel"
@@ -30,10 +35,8 @@ class BasePanel(bpy.types.Panel):
 
 def is_usb_device(partition):
     if platform.system() == "Windows":
-        # On Windows, USB drives often have 'removable' in their fstype
         return 'removable' in partition.opts.lower()
     else:
-        # On Linux, checking for 'usb' in opts or '/media' in mountpoint
         return 'usb' in partition.opts or "/media" in partition.mountpoint
 
 def show_progress(ws, ref, progress, progress_text = ""):
