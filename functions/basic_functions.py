@@ -1,7 +1,7 @@
 import bpy
 
 import time
-import subprocess, os, psutil, platform
+import subprocess, os, platform
 
 import cProfile
 import pstats

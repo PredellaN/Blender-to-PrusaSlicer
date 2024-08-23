@@ -3,8 +3,6 @@ from bpy.utils import register_class, unregister_class
 import os, subprocess, sys, importlib
 import inspect
 
-from ..constants import PG_NAME, DEPENDENCIES
-
 def reload_modules(modules):
     for module in modules:
         importlib.reload(module)
@@ -19,6 +17,7 @@ def get_classes(modules):
 def register_classes(classes):
     for class_to_register in classes:
         bpy.utils.register_class(class_to_register)
+    return classes
 
 def unregister_classes(classes):
     for class_to_register in classes:
@@ -26,6 +25,7 @@ def unregister_classes(classes):
             bpy.utils.unregister_class(class_to_register)
         except:
             continue
+    return []
 
 def install_pip():
     try:
@@ -36,7 +36,7 @@ def install_pip():
         ensurepip.bootstrap()
         os.environ.pop("PIP_REQ_TRACKER", None)
 
-def import_module(module_name, global_name=None, reload=True):
+def import_module(module_name, global_name=None):
     if global_name is None:
         global_name = module_name
 
