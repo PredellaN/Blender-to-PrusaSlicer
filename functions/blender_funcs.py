@@ -59,9 +59,10 @@ class ConfigLoader:
                 os.remove(temp_path)
 
 
-    def write_ini_file(self, config_local_path):
+    def write_ini_file(self, config_local_path, use_overrides = True):
+        config = self.config_with_overrides if use_overrides else self.config_dict
         with open(config_local_path, 'w') as file:
-            for key, value in self.config_with_overrides.items():
+            for key, value in config.items():
                 file.write(f"{key} = {value}\n")
         return config_local_path
 
