@@ -61,7 +61,7 @@ class ConfigLoader:
 
     def write_ini_file(self, config_local_path):
         with open(config_local_path, 'w') as file:
-            for key, value in self.config_dict.items():
+            for key, value in self.config_with_overrides.items():
                 file.write(f"{key} = {value}\n")
         return config_local_path
 
@@ -77,9 +77,6 @@ class ConfigLoader:
 
             key, value = line.split('=', 1)
             self.config_dict[key.strip()] = value.strip()
-
-    def read_overrides(self, ):
-        pass
 
     def _write_text_block(self, text_block_id):
         if self.config_dict:
