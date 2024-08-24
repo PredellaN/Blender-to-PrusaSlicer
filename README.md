@@ -24,7 +24,7 @@ Custom Configurations: Load and apply custom PrusaSlicer configuration files (.i
 - Find the PrusaSlicer section in the Scene menu
 
 ![Screenshot from 2024-08-20 23-06-57](https://github.com/user-attachments/assets/9f58fdfb-c026-4b84-8f19-616d8ddf298f)
-- Use the overrides panel to customize the slicing. The original configuration file itself will remain unchaged.
+- Use the overrides panel to customize the slicing. The original configuration file itself will remain unchaged. After slicing one time, the used configuration will be loaded in an internal text file "prusaslicer_configuration.json"
 - Click "Slice" to generate G-code (it will be saved in the same folder as the .blend file) or "Open with PrusaSlicer" to view the model in PrusaSlicer. It's also possible to Slice to USB device by clicking on the drive button, and unmounting using the unlock button.
 
 ## Requirements
