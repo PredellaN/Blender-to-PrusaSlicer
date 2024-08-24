@@ -27,7 +27,7 @@ class PrusaSlicerPanel(BasePanel):
         row.prop(prop_group, "config", text="Configuration (.ini)")
 
         row = layout.row()
-        row.operator(f"{PG_NAME}.slice", text="Slice", icon="ALIGN_JUSTIFY").mode="slice"
+        row.operator(f"{PG_NAME}.slice", text="Slice and Preview", icon="ALIGN_JUSTIFY").mode="slice"
         row.operator(f"{PG_NAME}.slice", text="Open with PrusaSlicer").mode="open"
 
         row = layout.row()
@@ -35,8 +35,6 @@ class PrusaSlicerPanel(BasePanel):
         row.enabled = False
 
         ### USB Devices
-
-
         try:
             import psutil
             partitions = psutil.disk_partitions()

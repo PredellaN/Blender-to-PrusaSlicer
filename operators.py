@@ -1,12 +1,13 @@
 import bpy # type: ignore
-import os, subprocess, time, tempfile, threading, re
-from collections import Counter
+import os, subprocess, time, tempfile, threading
+from functools import partial
 
 from .functions.basic_functions import show_progress
 from .functions import blender_funcs as bf
 from .constants import PG_NAME
 
 temp_dir = tempfile.gettempdir()
+temp_files = []
 
 class ParamAddOperator(bpy.types.Operator):
     bl_idname = f"{PG_NAME}.add_param"
@@ -69,6 +70,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
     def execute(self, context):
         ws = context.workspace
         prop_group = getattr(ws, PG_NAME)
+        blendfile_directory = os.path.dirname(bpy.data.filepath)
 
         prop_group.running = 1
 
@@ -81,28 +83,26 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         filament = loader.config_with_overrides['filament_type']
         printer = loader.config_with_overrides['printer_settings_id']
 
-        selected_objects = context.selected_objects
 
-        object_names = [re.sub(r'\.\d{0,3}$', '', obj.name) for obj in selected_objects]
-        name_counter = Counter(object_names)
-        final_names = [f"{count}x_{name}" if count > 1 else name for name, count in name_counter.items()]
-        final_names.sort()
+        obj_names = bf.names_array_from_objects(context.selected_objects)
 
-        base_filename = "-".join(final_names)
+        base_filename = "-".join(obj_names)
 
-        stl_file_path = os.path.join(temp_dir, base_filename + ".stl")
+        stl_file_name = base_filename + ".stl"
+        stl_file_path = os.path.join(temp_dir, stl_file_name)
 
-        file_directory = os.path.dirname(bpy.data.filepath)
-
+        gcode_filename = f"{base_filename}-{filament}-{printer}.gcode"
         if self.mountpoint:
             gcode_dir = self.mountpoint
-        elif file_directory:
-            gcode_dir = file_directory
+        elif blendfile_directory:
+            gcode_dir = blendfile_directory
         else:
             gcode_dir = temp_dir
+        gcode_path = os.path.join(gcode_dir, gcode_filename)
 
-        temp_files = []
+        callback = partial(show_preview, gcode_path) if not self.mountpoint else None # if slicing to USB don't show a preview
 
+        global temp_files
         bpy.ops.wm.stl_export(filepath=stl_file_path, global_scale=1000, export_selected_objects=True)
         temp_files.append(stl_file_path)
 
@@ -114,7 +114,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
             command = [
                 "--load", ini_file_path, 
                 "-g", os.path.join(stl_file_path), 
-                "--output", os.path.join(gcode_dir, f"{base_filename}-{filament}-{printer}.gcode")
+                "--output", os.path.join(gcode_path)
             ]
 
         if self.mode == "open":
@@ -124,14 +124,23 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
                 os.path.join(stl_file_path)
             ]
 
-        thread = threading.Thread(target=do_slice, args=[command, ws, temp_files])
+        thread = threading.Thread(target=do_slice, args=[command, ws, callback])
         thread.start()
-        
+
         return {'FINISHED'}
     
-def delete_tempfiles(temp_files):
+def delete_tempfiles():
+    global temp_files
     for file in temp_files:
         os.remove(file)
+    temp_files = []
+
+def show_preview(gcode_path):
+    if gcode_path and os.path.exists(gcode_path):
+        gcode_thread = threading.Thread(target=run_prusaslicer, args=[["--gcodeviewer", gcode_path]])
+        gcode_thread.start()
+    else:
+        print("Gcode file not found: skipping preview.")
 
 def run_prusaslicer(command):
     preferences = bpy.context.preferences.addons[__package__].preferences
@@ -167,13 +176,13 @@ def run_prusaslicer(command):
             
         return "No error message returned, check your model size"
 
-def do_slice(command, ws, temp_files):
+def do_slice(command, ws, callback = None):
     
     start_time = time.time()
     res = run_prusaslicer(command)
     end_time = time.time()
 
-    delete_tempfiles(temp_files)
+    delete_tempfiles()
 
     if res:
         show_progress(ws, getattr(ws, PG_NAME), 100, f'Failed ({res})')
@@ -181,5 +190,8 @@ def do_slice(command, ws, temp_files):
         show_progress(ws, getattr(ws, PG_NAME), 100, f'Done (in {(end_time - start_time):.2f}s)')
 
     getattr(ws, PG_NAME).running = 0
+
+    if callback:
+        callback()
 
     return {'FINISHED'}

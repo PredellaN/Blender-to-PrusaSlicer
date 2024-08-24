@@ -3,8 +3,18 @@ import os
 import urllib.request
 import json
 import tempfile
+import re
+
+from collections import Counter
 
 TEXT_BLOCK_NAME = "prusaslicer_configuration.json"
+
+def names_array_from_objects(objects):
+    object_names = [re.sub(r'\.\d{0,3}$', '', obj.name) for obj in objects]
+    name_counter = Counter(object_names)
+    final_names = [f"{count}x_{name}" if count > 1 else name for name, count in name_counter.items()]
+    final_names.sort()
+    return final_names
 
 class ConfigLoader:
     def __init__(self, text_block_id = None):
