@@ -23,8 +23,22 @@ class PrusaSlicerPanel(BasePanel):
 
         layout = self.layout
 
+        # Toggle button for single or multiple configuration files
         row = layout.row()
-        row.prop(prop_group, "config", text="Configuration (.ini)")
+        row.prop(prop_group, "use_single_config", text="Use Single Configuration")
+
+        if prop_group.use_single_config:
+            row = layout.row()
+            row.prop(prop_group, "config", text="Configuration (.ini)")
+        else:
+            row = layout.row()
+            row.prop(prop_group, "printer_config_file", text="Printer (.ini)")
+            
+            row = layout.row()
+            row.prop(prop_group, "filament_config_file", text="Filament (.ini)")
+            
+            row = layout.row()
+            row.prop(prop_group, "print_config_file", text="Print (.ini)")
 
         row = layout.row()
         row.operator(f"{PG_NAME}.slice", text="Slice and Preview", icon="ALIGN_JUSTIFY").mode="slice"

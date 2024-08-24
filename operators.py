@@ -77,7 +77,12 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         show_progress(ws, prop_group, 0, "Exporting STL...")
 
         loader = bf.ConfigLoader()
-        loader.load_config_from_path(prop_group.config)
+        if prop_group.use_single_config == False:
+            loader.load_config_from_path(prop_group.printer_config_file, append=False)
+            loader.load_config_from_path(prop_group.filament_config_file, append=True)
+            loader.load_config_from_path(prop_group.print_config_file, append=True)
+        else:
+            loader.load_config_from_path(prop_group.config, append=False)
         loader.overrides_dict = bf.load_list_to_dict(prop_group.list)
         
         filament = loader.config_with_overrides['filament_type']

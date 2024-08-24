@@ -38,7 +38,7 @@ class ConfigLoader:
             config.update(self.overrides_dict)
         return config
 
-    def load_config_from_path(self, path):
+    def load_config_from_path(self, path, append = False):
         self.original_file_path = path
         if path.startswith('http://') or path.startswith('https://'):
             response = urllib.request.urlopen(path)
@@ -51,7 +51,7 @@ class ConfigLoader:
         else:
             config_local_path = bpy.path.abspath(path)
 
-        self.load_ini_file(config_local_path)
+        self.load_ini_file(config_local_path, append=append)
         self._write_text_block(TEXT_BLOCK_NAME)
 
         if 'temp_path' in locals():
@@ -66,8 +66,9 @@ class ConfigLoader:
                 file.write(f"{key} = {value}\n")
         return config_local_path
 
-    def load_ini_file(self, config_local_path):
-        self.config_dict = {}
+    def load_ini_file(self, config_local_path, append = False):
+        if not append:
+            self.config_dict = {}
         with open(config_local_path, 'r') as file:
             lines = file.readlines()
 
