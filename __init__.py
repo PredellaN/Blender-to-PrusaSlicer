@@ -1,16 +1,15 @@
 import bpy
 from .functions import modules as mod
-from .constants import PG_NAME, DEPENDENCIES
+from .constants import PG_NAME
 
 bl_info = {
     "name" : "Blender to PrusaSlicer",
     "author" : "Nicolas Predella",
     "description" : "",
-    "blender" : (4, 2, 0),
-    "version" : (0, 0, 1),  
+    "blender" : (4, 2, 1),
+    "version" : (0, 0, 2),  
     "location" : "",
     "warning" : "",
-    "category" : "Generic"
 }
 registered_classes = []
 
