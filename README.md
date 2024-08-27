@@ -13,7 +13,9 @@ Slice models and open them in PrusaSlicer directly from Blender.
 
 ## Installation
 - Clone or download this repository.
-- Open Blender and go to Edit > Preferences > Add-ons.
+- Open Blender and go to Edit > Preferences > Add-ons > arrow on the top-right corner > Install from Disk.
+![image](https://github.com/user-attachments/assets/cc34cb88-59cb-40fb-91ea-fb14242db1f2)
+
 - Click Install and select the .zip file of the add-on.
 - Enable the add-on in the preferences.
 - Install psutil using the "Install dependencies" button in the add-on preferences
@@ -24,8 +26,8 @@ Slice models and open them in PrusaSlicer directly from Blender.
 - Select the objects to slice in Blender.
 - Find the PrusaSlicer section in the Scene menu:
 
-![Screenshot from 2024-08-20 23-06-57](https://github.com/user-attachments/assets/9f58fdfb-c026-4b84-8f19-616d8ddf298f)
-- Use the overrides panel to change settings on the fly.
+![image](https://github.com/user-attachments/assets/9b2c9180-a9db-4675-b65f-aed40a3c1958)
+- Optional: use the overrides panel to change settings on the fly.
 - Click "Slice" to generate and preview the G-code (it will be saved in the same folder as the .blend file) or "Open with PrusaSlicer" to export and open the model in the regular PrusaSlicer UI.
 
 ## Requirements
