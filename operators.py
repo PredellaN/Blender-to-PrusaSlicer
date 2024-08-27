@@ -96,7 +96,9 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         stl_file_name = base_filename + ".stl"
         stl_file_path = os.path.join(temp_dir, stl_file_name)
 
-        gcode_filename = f"{base_filename}-{filament}-{printer}.gcode"
+        extension = "bgcode" if loader.config_with_overrides['binary_gcode'] else "gcode"
+
+        gcode_filename = f"{base_filename}-{filament}-{printer}.{extension}"
         if self.mountpoint:
             gcode_dir = self.mountpoint
         elif blendfile_directory:
