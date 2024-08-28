@@ -107,7 +107,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
             gcode_dir = temp_dir
         gcode_path = os.path.join(gcode_dir, gcode_filename)
 
-        callback = partial(show_preview, gcode_path) if not self.mountpoint else None # if slicing to USB don't show a preview
+        callback = partial(show_preview, gcode_path) if self.mode == "slice_and_preview" else None # if slicing to USB don't show a preview
 
         global temp_files
         bpy.ops.wm.stl_export(filepath=stl_file_path, global_scale=1000, export_selected_objects=True)
@@ -116,7 +116,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         ini_file_path = os.path.join(temp_dir, 'config.ini')
         temp_files.append(loader.write_ini_file(ini_file_path))
 
-        if self.mode == "slice":
+        if self.mode in ("slice", "slice_and_preview"):
             show_progress(ws, prop_group, 30, 'Slicing with PrusaSlicer...')
             command = [
                 "--load", ini_file_path, 

@@ -41,7 +41,8 @@ class PrusaSlicerPanel(BasePanel):
             row.prop(prop_group, "print_config_file", text="Print (.ini)")
 
         row = layout.row()
-        row.operator(f"{PG_NAME}.slice", text="Slice and Preview", icon="ALIGN_JUSTIFY").mountpoint=""
+        row.operator(f"{PG_NAME}.slice", text="Slice", icon="ALIGN_JUSTIFY").mode="slice"
+        row.operator(f"{PG_NAME}.slice", text="Slice and Preview", icon="ALIGN_JUSTIFY").mode="slice_and_preview"
         row.operator(f"{PG_NAME}.slice", text="Open with PrusaSlicer").mode="open"
 
         row = layout.row()
