@@ -4,38 +4,38 @@ from functools import partial
 
 from .functions.basic_functions import show_progress
 from .functions import blender_funcs as bf
-from .constants import PG_NAME
+from .constants import PG_NAME_LC
 
 temp_dir = tempfile.gettempdir()
 temp_files = []
 
 class ParamAddOperator(bpy.types.Operator):
-    bl_idname = f"{PG_NAME}.add_param"
+    bl_idname = f"{PG_NAME_LC}.add_param"
     bl_label = "Add Parameter"
 
     def execute(self, context):
         ws = context.workspace
-        prop_group = getattr(ws, PG_NAME)
+        prop_group = getattr(ws, PG_NAME_LC)
 
         control_list = getattr(prop_group, f'list')
         control_list.add()
         return {'FINISHED'}
 
 class ParamRemoveOperator(bpy.types.Operator):
-    bl_idname = f"{PG_NAME}.remove_param"
+    bl_idname = f"{PG_NAME_LC}.remove_param"
     bl_label = "Remove Parameter"
     item_index: bpy.props.IntProperty() # type: ignore
 
     def execute(self, context):
         ws = context.workspace
-        prop_group = getattr(ws, PG_NAME)
+        prop_group = getattr(ws, PG_NAME_LC)
 
         control_list = getattr(prop_group, f'list')
         control_list.remove(self.item_index)
         return {'FINISHED'}
 
 class UnmountUsbOperator(bpy.types.Operator):
-    bl_idname = f"{PG_NAME}.unmount_usb"
+    bl_idname = f"{PG_NAME_LC}.unmount_usb"
     bl_label = "Unmount USB"
     mountpoint: bpy.props.StringProperty()  # type: ignore
 
@@ -61,7 +61,7 @@ class UnmountUsbOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 class RunPrusaSlicerOperator(bpy.types.Operator):
-    bl_idname = f"{PG_NAME}.slice"
+    bl_idname = f"{PG_NAME_LC}.slice"
     bl_label = "Run PrusaSlicer"
 
     mode: bpy.props.StringProperty(name="", default="slice") # type: ignore
@@ -69,7 +69,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
     
     def execute(self, context):
         ws = context.workspace
-        prop_group = getattr(ws, PG_NAME)
+        prop_group = getattr(ws, PG_NAME_LC)
         blendfile_directory = os.path.dirname(bpy.data.filepath)
 
         prop_group.running = 1
@@ -192,11 +192,11 @@ def do_slice(command, ws, callback = None):
     delete_tempfiles()
 
     if res:
-        show_progress(ws, getattr(ws, PG_NAME), 100, f'Failed ({res})')
+        show_progress(ws, getattr(ws, PG_NAME_LC), 100, f'Failed ({res})')
     else:
-        show_progress(ws, getattr(ws, PG_NAME), 100, f'Done (in {(end_time - start_time):.2f}s)')
+        show_progress(ws, getattr(ws, PG_NAME_LC), 100, f'Done (in {(end_time - start_time):.2f}s)')
 
-    getattr(ws, PG_NAME).running = 0
+    getattr(ws, PG_NAME_LC).running = 0
 
     if callback:
         callback()

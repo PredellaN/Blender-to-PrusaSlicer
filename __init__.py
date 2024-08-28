@@ -1,6 +1,6 @@
 import bpy
 from .functions import modules as mod
-from .constants import PG_NAME
+from .constants import PG_NAME_LC
 
 bl_info = {
     "name" : "Blender to PrusaSlicer",
@@ -15,19 +15,21 @@ registered_classes = []
 
 def register():
     from . import preferences as pref
+    mod.reload_modules([pref])
     registered_classes.extend(mod.register_classes(mod.get_classes([pref])))
 
     from . import operators as op
     from . import panels as pn
     from . import property_groups as pg
+    mod.reload_modules([op, pn, pg])
     registered_classes.extend(mod.register_classes(mod.get_classes([op,pn,pg])))
 
-    setattr(bpy.types.WorkSpace, PG_NAME, bpy.props.PointerProperty(type=pg.PrusaSlicerPropertyGroup))
+    setattr(bpy.types.WorkSpace, PG_NAME_LC, bpy.props.PointerProperty(type=pg.PrusaSlicerPropertyGroup))
 
-    pass
+
 def unregister():
     mod.unregister_classes(registered_classes)
-    pass
+
 
 if __name__ == "__main__":
     register()

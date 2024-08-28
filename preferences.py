@@ -1,11 +1,11 @@
 import bpy
 import subprocess
 from .functions import modules as mod
-from .constants import PG_NAME, DEPENDENCIES
-from . import unregister, register  # Import the unregister and register functions
+from .constants import PG_NAME_LC, DEPENDENCIES
+from . import register, unregister  # Import the unregister and register functions
 
 class EXAMPLE_OT_install_dependencies(bpy.types.Operator):
-    bl_idname = f"{PG_NAME}.install_dependencies"
+    bl_idname = f"{PG_NAME_LC}.install_dependencies"
     bl_label = "Install dependencies"
     bl_description = ("Downloads and installs the required python packages for this add-on")
     bl_options = {"REGISTER", "INTERNAL"}
@@ -45,5 +45,4 @@ class PrusaSlicerPreferences(bpy.types.AddonPreferences):
                 mod.import_module(module_name=dependency.module, global_name=dependency.name)
             layout.label(icon='CHECKMARK', text="Dependencies installed")
         except ModuleNotFoundError:
-            
-            layout.operator(f"{PG_NAME}.install_dependencies", icon="CONSOLE")
+            layout.operator(f"{PG_NAME_LC}.install_dependencies", icon="CONSOLE")

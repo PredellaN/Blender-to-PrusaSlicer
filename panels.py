@@ -1,6 +1,7 @@
 import bpy # type: ignore
+from .functions import modules as mod
 from .functions.basic_functions import BasePanel, is_usb_device
-from .constants import PG_NAME
+from .constants import PG_NAME_LC
 
 try:
     import psutil
@@ -12,7 +13,7 @@ class PRUSASLICER_UL_IdValue(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         row = layout.row()
 
-        delete_op = row.operator(f"{PG_NAME}.remove_param", text="", icon='X')
+        delete_op = row.operator(f"{PG_NAME_LC}.remove_param", text="", icon='X')
         delete_op.item_index = index
 
         row.prop(item, "param_id")
@@ -24,7 +25,7 @@ class PrusaSlicerPanel(BasePanel):
 
     def draw(self, context):
         ws = context.workspace
-        pg = getattr(ws, PG_NAME)
+        pg = getattr(ws, PG_NAME_LC)
 
         layout = self.layout
 
@@ -47,9 +48,9 @@ class PrusaSlicerPanel(BasePanel):
 
         if (pg.use_single_config and pg.config) or (not pg.use_single_config and pg.printer_config_file and pg.filament_config_file and pg.print_config_file):
             row = layout.row()
-            row.operator(f"{PG_NAME}.slice", text="Slice", icon="ALIGN_JUSTIFY").mode="slice"
-            row.operator(f"{PG_NAME}.slice", text="Slice and Preview", icon="ALIGN_JUSTIFY").mode="slice_and_preview"
-            row.operator(f"{PG_NAME}.slice", text="Open with PrusaSlicer").mode="open"
+            row.operator(f"{PG_NAME_LC}.slice", text="Slice", icon="ALIGN_JUSTIFY").mode="slice"
+            row.operator(f"{PG_NAME_LC}.slice", text="Slice and Preview", icon="ALIGN_JUSTIFY").mode="slice_and_preview"
+            row.operator(f"{PG_NAME_LC}.slice", text="Open with PrusaSlicer").mode="open"
 
         row = layout.row()
         row.prop(pg, "progress", text=pg.progress_text, slider=True)
@@ -70,8 +71,8 @@ class PrusaSlicerPanel(BasePanel):
                     row = layout.row()
                     mountpoint = partition.mountpoint
                     row.enabled = False if pg.running else True
-                    row.operator(f"{PG_NAME}.unmount_usb", text="", icon='UNLOCKED').mountpoint=mountpoint
-                    row.operator(f"{PG_NAME}.slice", text="", icon='DISK_DRIVE').mountpoint=mountpoint
+                    row.operator(f"{PG_NAME_LC}.unmount_usb", text="", icon='UNLOCKED').mountpoint=mountpoint
+                    row.operator(f"{PG_NAME_LC}.slice", text="", icon='DISK_DRIVE').mountpoint=mountpoint
                     row.label(text=f"{mountpoint.split('/')[-1]} mounted at {mountpoint} ({partition.device})")
 
         ### Config Overrides
@@ -85,4 +86,4 @@ class PrusaSlicerPanel(BasePanel):
                 pg, f"list_index"
                 )
         row = layout.row()
-        row.operator(f"{PG_NAME}.add_param")
+        row.operator(f"{PG_NAME_LC}.add_param")
