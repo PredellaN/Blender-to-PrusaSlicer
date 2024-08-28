@@ -1,7 +1,12 @@
 import bpy # type: ignore
 from .functions.basic_functions import BasePanel, is_usb_device
-from .functions import modules as mod
 from .constants import PG_NAME
+
+try:
+    import psutil
+    deps_enabled = True
+except ModuleNotFoundError:
+    deps_enabled = False
 
 class PRUSASLICER_UL_IdValue(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -19,39 +24,39 @@ class PrusaSlicerPanel(BasePanel):
 
     def draw(self, context):
         ws = context.workspace
-        prop_group = getattr(ws, PG_NAME)
+        pg = getattr(ws, PG_NAME)
 
         layout = self.layout
 
         # Toggle button for single or multiple configuration files
         row = layout.row()
-        row.prop(prop_group, "use_single_config", text="Use Single Configuration")
+        row.prop(pg, "use_single_config", text="Use Single Configuration")
 
-        if prop_group.use_single_config:
+        if pg.use_single_config:
             row = layout.row()
-            row.prop(prop_group, "config", text="Configuration (.ini)")
+            row.prop(pg, "config", text="Configuration (.ini)")
         else:
             row = layout.row()
-            row.prop(prop_group, "printer_config_file", text="Printer (.ini)")
+            row.prop(pg, "printer_config_file", text="Printer (.ini)")
             
             row = layout.row()
-            row.prop(prop_group, "filament_config_file", text="Filament (.ini)")
+            row.prop(pg, "filament_config_file", text="Filament (.ini)")
             
             row = layout.row()
-            row.prop(prop_group, "print_config_file", text="Print (.ini)")
+            row.prop(pg, "print_config_file", text="Print (.ini)")
+
+        if (pg.use_single_config and pg.config) or (not pg.use_single_config and pg.printer_config_file and pg.filament_config_file and pg.print_config_file):
+            row = layout.row()
+            row.operator(f"{PG_NAME}.slice", text="Slice", icon="ALIGN_JUSTIFY").mode="slice"
+            row.operator(f"{PG_NAME}.slice", text="Slice and Preview", icon="ALIGN_JUSTIFY").mode="slice_and_preview"
+            row.operator(f"{PG_NAME}.slice", text="Open with PrusaSlicer").mode="open"
 
         row = layout.row()
-        row.operator(f"{PG_NAME}.slice", text="Slice", icon="ALIGN_JUSTIFY").mode="slice"
-        row.operator(f"{PG_NAME}.slice", text="Slice and Preview", icon="ALIGN_JUSTIFY").mode="slice_and_preview"
-        row.operator(f"{PG_NAME}.slice", text="Open with PrusaSlicer").mode="open"
-
-        row = layout.row()
-        row.prop(prop_group, "progress", text=prop_group.progress_text, slider=True)
+        row.prop(pg, "progress", text=pg.progress_text, slider=True)
         row.enabled = False
 
         ### USB Devices
-        try:
-            import psutil
+        if deps_enabled:
             partitions = psutil.disk_partitions()
 
             for partition in partitions:
@@ -64,12 +69,10 @@ class PrusaSlicerPanel(BasePanel):
                 if is_usb_device(partition):
                     row = layout.row()
                     mountpoint = partition.mountpoint
-                    row.enabled = False if prop_group.running else True
+                    row.enabled = False if pg.running else True
                     row.operator(f"{PG_NAME}.unmount_usb", text="", icon='UNLOCKED').mountpoint=mountpoint
                     row.operator(f"{PG_NAME}.slice", text="", icon='DISK_DRIVE').mountpoint=mountpoint
                     row.label(text=f"{mountpoint.split('/')[-1]} mounted at {mountpoint} ({partition.device})")
-        except ModuleNotFoundError:
-            pass #Slice to Disk disabled: install psutil by using the install dependencies tool in the addon preferences
 
         ### Config Overrides
 
@@ -78,8 +81,8 @@ class PrusaSlicerPanel(BasePanel):
 
         row = layout.row()
         row.template_list(f"PRUSASLICER_UL_IdValue", "Params",
-                prop_group, f"list",
-                prop_group, f"list_index"
+                pg, f"list",
+                pg, f"list_index"
                 )
         row = layout.row()
         row.operator(f"{PG_NAME}.add_param")
