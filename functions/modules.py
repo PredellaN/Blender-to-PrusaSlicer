@@ -52,6 +52,9 @@ def install_and_import_module(module_name, package_name=None, global_name=None):
     environ_copy = dict(os.environ)
     environ_copy["PYTHONNOUSERSITE"] = "1"
 
-    subprocess.run([sys.executable, "-m", "pip", "install", package_name], check=True, env=environ_copy)
+    if os.name == 'nt':
+        subprocess.run([sys.executable, "-m", "pip", "install", package_name], check=True, env=environ_copy, shell=True)
+    else:
+        subprocess.run([sys.executable, "-m", "pip", "install", package_name], check=True, env=environ_copy)
 
     import_module(module_name, global_name)

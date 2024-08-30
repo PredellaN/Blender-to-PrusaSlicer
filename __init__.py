@@ -3,7 +3,7 @@ from .functions import modules as mod
 from .constants import PG_NAME_LC, PG_NAME
 
 bl_info = {
-    "name" : "BlenderToPrusaSlicer",
+    "name" : "Blender To PrusaSlicer",
     "author" : "Nicolas Predella",
     "description" : "",
     "blender" : (4, 2, 1),
