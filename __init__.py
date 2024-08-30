@@ -1,9 +1,9 @@
 import bpy
 from .functions import modules as mod
-from .constants import PG_NAME_LC
+from .constants import PG_NAME_LC, PG_NAME
 
 bl_info = {
-    "name" : "Blender to PrusaSlicer",
+    "name" : "BlenderToPrusaSlicer",
     "author" : "Nicolas Predella",
     "description" : "",
     "blender" : (4, 2, 1),
