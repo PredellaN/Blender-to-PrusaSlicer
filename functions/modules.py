@@ -53,7 +53,9 @@ def install_and_import_module(module_name, package_name=None, global_name=None):
     environ_copy["PYTHONNOUSERSITE"] = "1"
 
     if os.name == 'nt':
-        subprocess.run([sys.executable, "-m", "pip", "install", package_name], check=True, env=environ_copy, shell=True)
+        # Get lib directory
+        lib = os.path.join(Path(py_exec).parent.parent, "lib")
+        subprocess.call([py_exec,"-m", "pip", "install", f"--target={str(lib)}", "your_package"])
     else:
         subprocess.run([sys.executable, "-m", "pip", "install", package_name], check=True, env=environ_copy)
 
