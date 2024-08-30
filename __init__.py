@@ -6,7 +6,7 @@ bl_info = {
     "name" : "Blender To PrusaSlicer",
     "author" : "Nicolas Predella",
     "description" : "",
-    "blender" : (4, 2, 1),
+    "blender" : (4, 2, 0),
     "version" : (0, 0, 2),  
     "location" : "",
     "warning" : "",
