@@ -1,6 +1,7 @@
 import bpy
 from bpy.utils import register_class, unregister_class
 import os, subprocess, sys, importlib
+from pathlib import Path
 import inspect
 
 def reload_modules(modules):
