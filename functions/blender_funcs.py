@@ -39,6 +39,9 @@ class ConfigLoader:
         return config
 
     def load_config_from_path(self, path, append = False):
+        if not path:
+            return False
+
         self.original_file_path = path
         if path.startswith('http://') or path.startswith('https://'):
             response = urllib.request.urlopen(path)
@@ -57,6 +60,8 @@ class ConfigLoader:
         if 'temp_path' in locals():
             if os.path.exists(temp_path):
                 os.remove(temp_path)
+
+        return True
 
 
     def write_ini_file(self, config_local_path, use_overrides = True):

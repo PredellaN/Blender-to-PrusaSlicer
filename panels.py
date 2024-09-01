@@ -46,11 +46,13 @@ class PrusaSlicerPanel(BasePanel):
             row = layout.row()
             row.prop(pg, "print_config_file", text="Print (.ini)")
 
+        row = layout.row()
         if (pg.use_single_config and pg.config) or (not pg.use_single_config and pg.printer_config_file and pg.filament_config_file and pg.print_config_file):
-            row = layout.row()
+            
             row.operator(f"{PG_NAME_LC}.slice", text="Slice", icon="ALIGN_JUSTIFY").mode="slice"
             row.operator(f"{PG_NAME_LC}.slice", text="Slice and Preview", icon="ALIGN_JUSTIFY").mode="slice_and_preview"
-            row.operator(f"{PG_NAME_LC}.slice", text="Open with PrusaSlicer").mode="open"
+            
+        row.operator(f"{PG_NAME_LC}.slice", text="Open with PrusaSlicer").mode="open"
 
         row = layout.row()
         row.prop(pg, "progress", text=pg.progress_text, slider=True)

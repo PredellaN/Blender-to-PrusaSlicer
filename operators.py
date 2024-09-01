@@ -76,19 +76,6 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
         show_progress(ws, prop_group, 0, "Exporting STL...")
 
-        loader = bf.ConfigLoader()
-        if prop_group.use_single_config == False:
-            loader.load_config_from_path(prop_group.printer_config_file, append=False)
-            loader.load_config_from_path(prop_group.filament_config_file, append=True)
-            loader.load_config_from_path(prop_group.print_config_file, append=True)
-        else:
-            loader.load_config_from_path(prop_group.config, append=False)
-        loader.overrides_dict = bf.load_list_to_dict(prop_group.list)
-        
-        filament = loader.config_with_overrides['filament_type']
-        printer = loader.config_with_overrides['printer_settings_id']
-
-
         obj_names = bf.names_array_from_objects(context.selected_objects)
 
         base_filename = "-".join(obj_names)
@@ -96,9 +83,38 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         stl_file_name = base_filename + ".stl"
         stl_file_path = os.path.join(temp_dir, stl_file_name)
 
-        extension = "bgcode" if loader.config_with_overrides['binary_gcode'] else "gcode"
+        global temp_files
+        temp_files = []
 
+        bpy.ops.wm.stl_export(filepath=stl_file_path, global_scale=1000, export_selected_objects=True)
+        temp_files.append(stl_file_path)
+
+        show_progress(ws, prop_group, 10, "Preparing Configuration...")
+        loader = bf.ConfigLoader()
+        if prop_group.use_single_config == False:
+            loader.load_config_from_path(prop_group.printer_config_file, append=False)
+            loader.load_config_from_path(prop_group.filament_config_file, append=True)
+            loader.load_config_from_path(prop_group.print_config_file, append=True)
+        else:
+            loader.load_config_from_path(prop_group.config, append=False)
+
+        if not loader.config_dict:
+            show_progress(ws, prop_group, 30, 'Opening PrusaSlicer...')
+            command = [os.path.join(stl_file_path)]
+
+            thread = threading.Thread(target=do_slice, args=[command, ws, None])
+            thread.start()
+
+            return {'FINISHED'}
+
+        loader.overrides_dict = bf.load_list_to_dict(prop_group.list)
+        
+        filament = loader.config_with_overrides['filament_type']
+        printer = loader.config_with_overrides['printer_settings_id']
+
+        extension = "bgcode" if loader.config_with_overrides['binary_gcode'] else "gcode"
         gcode_filename = f"{base_filename}-{filament}-{printer}.{extension}"
+
         if self.mountpoint:
             gcode_dir = self.mountpoint
         elif blendfile_directory:
@@ -108,10 +124,6 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         gcode_path = os.path.join(gcode_dir, gcode_filename)
 
         callback = partial(show_preview, gcode_path) if self.mode == "slice_and_preview" else None # if slicing to USB don't show a preview
-
-        global temp_files
-        bpy.ops.wm.stl_export(filepath=stl_file_path, global_scale=1000, export_selected_objects=True)
-        temp_files.append(stl_file_path)
 
         ini_file_path = os.path.join(temp_dir, 'config.ini')
         temp_files.append(loader.write_ini_file(ini_file_path))
