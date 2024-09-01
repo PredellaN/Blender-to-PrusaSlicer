@@ -1,8 +1,8 @@
-import bpy
+import bpy, os
 import subprocess
 from .functions import modules as mod
-from .constants import PG_NAME_LC, DEPENDENCIES
-from . import register, unregister  # Import the unregister and register functions
+from . import PG_NAME_LC, DEPENDENCIES, DEPENDENCIES_FOLDER
+from . import register, unregister, dependencies_installed  # Import the unregister and register functions
 
 class EXAMPLE_OT_install_dependencies(bpy.types.Operator):
     bl_idname = f"{PG_NAME_LC}.install_dependencies"
@@ -16,7 +16,8 @@ class EXAMPLE_OT_install_dependencies(bpy.types.Operator):
             for dependency in DEPENDENCIES:
                 mod.install_and_import_module(module_name=dependency.module,
                                           package_name=dependency.package,
-                                          global_name=dependency.name)
+                                          global_name=dependency.name,
+                                          path=DEPENDENCIES_FOLDER)
         except (subprocess.CalledProcessError, ImportError) as err:
             self.report({"ERROR"}, str(err))
             return {"CANCELLED"}
@@ -40,9 +41,7 @@ class PrusaSlicerPreferences(bpy.types.AddonPreferences):
         layout.prop(self, "prusaslicer_path")
 
         layout = self.layout
-        try:
-            for dependency in DEPENDENCIES:
-                mod.import_module(module_name=dependency.module, global_name=dependency.name)
+        if dependencies_installed:
             layout.label(icon='CHECKMARK', text="Dependencies installed")
-        except ModuleNotFoundError:
+        else:
             layout.operator(f"{PG_NAME_LC}.install_dependencies", icon="CONSOLE")

@@ -4,7 +4,7 @@ from functools import partial
 
 from .functions.basic_functions import show_progress
 from .functions import blender_funcs as bf
-from .constants import PG_NAME_LC
+from . import PG_NAME_LC
 
 temp_dir = tempfile.gettempdir()
 temp_files = []
@@ -148,7 +148,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
         return {'FINISHED'}
     
-def delete_tempfiles():
+def cleanup():
     global temp_files
     for file in temp_files:
         os.remove(file)
@@ -201,7 +201,7 @@ def do_slice(command, ws, callback = None):
     res = run_prusaslicer(command)
     end_time = time.time()
 
-    delete_tempfiles()
+    cleanup()
 
     if res:
         show_progress(ws, getattr(ws, PG_NAME_LC), 100, f'Failed ({res})')

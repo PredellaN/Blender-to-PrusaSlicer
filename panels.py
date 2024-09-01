@@ -1,13 +1,6 @@
 import bpy # type: ignore
-from .functions import modules as mod
 from .functions.basic_functions import BasePanel, is_usb_device
-from .constants import PG_NAME_LC
-
-try:
-    import psutil
-    deps_enabled = True
-except ModuleNotFoundError:
-    deps_enabled = False
+from . import PG_NAME_LC, dependencies_installed
 
 class PRUSASLICER_UL_IdValue(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -59,7 +52,8 @@ class PrusaSlicerPanel(BasePanel):
         row.enabled = False
 
         ### USB Devices
-        if deps_enabled:
+        if dependencies_installed:
+            import psutil
             partitions = psutil.disk_partitions()
 
             for partition in partitions:

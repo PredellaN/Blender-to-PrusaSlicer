@@ -1,15 +1,12 @@
 import bpy
 
 import time
-import subprocess, os, platform
+import platform
 
 import cProfile
 import pstats
 import io
 
-from collections import namedtuple
-
-Dependency = namedtuple("Dependency", ["module", "package", "name"])
 
 class BasePanel(bpy.types.Panel):
     bl_label = "Default Panel"
