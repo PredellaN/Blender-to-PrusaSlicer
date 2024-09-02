@@ -112,7 +112,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         filament = loader.config_with_overrides['filament_type']
         printer = loader.config_with_overrides['printer_settings_id']
 
-        extension = "bgcode" if loader.config_with_overrides['binary_gcode'] else "gcode"
+        extension = "bgcode" if loader.config_with_overrides['binary_gcode'] == '1' else "gcode"
         gcode_filename = f"{base_filename}-{filament}-{printer}.{extension}"
 
         if self.mountpoint:
