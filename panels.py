@@ -42,8 +42,12 @@ class PrusaSlicerPanel(BasePanel):
         row = layout.row()
         if (pg.use_single_config and pg.config) or (not pg.use_single_config and pg.printer_config_file and pg.filament_config_file and pg.print_config_file):
             
-            row.operator(f"{PG_NAME_LC}.slice", text="Slice", icon="ALIGN_JUSTIFY").mode="slice"
-            row.operator(f"{PG_NAME_LC}.slice", text="Slice and Preview", icon="ALIGN_JUSTIFY").mode="slice_and_preview"
+            op = row.operator(f"{PG_NAME_LC}.slice", text="Slice", icon="ALIGN_JUSTIFY")
+            op.mode="slice"
+            op.mountpoint=""
+            op = row.operator(f"{PG_NAME_LC}.slice", text="Slice and Preview", icon="ALIGN_JUSTIFY")
+            op.mode="slice_and_preview"
+            op.mountpoint=""
             
         row.operator(f"{PG_NAME_LC}.slice", text="Open with PrusaSlicer").mode="open"
 
