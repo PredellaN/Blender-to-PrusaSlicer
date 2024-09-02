@@ -68,7 +68,9 @@ class PrusaSlicerPanel(BasePanel):
                     mountpoint = partition.mountpoint
                     row.enabled = False if pg.running else True
                     row.operator(f"{PG_NAME_LC}.unmount_usb", text="", icon='UNLOCKED').mountpoint=mountpoint
-                    row.operator(f"{PG_NAME_LC}.slice", text="", icon='DISK_DRIVE').mountpoint=mountpoint
+                    op = row.operator(f"{PG_NAME_LC}.slice", text="", icon='DISK_DRIVE')
+                    op.mountpoint=mountpoint
+                    op.mode = "slice"
                     row.label(text=f"{mountpoint.split('/')[-1]} mounted at {mountpoint} ({partition.device})")
 
         ### Config Overrides

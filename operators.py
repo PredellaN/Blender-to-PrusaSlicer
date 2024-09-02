@@ -201,8 +201,6 @@ def do_slice(command, ws, callback = None):
     res = run_prusaslicer(command)
     end_time = time.time()
 
-    cleanup()
-
     if res:
         show_progress(ws, getattr(ws, PG_NAME_LC), 100, f'Failed ({res})')
     else:
@@ -212,5 +210,7 @@ def do_slice(command, ws, callback = None):
 
     if callback:
         callback()
+
+    cleanup()
 
     return {'FINISHED'}
