@@ -50,14 +50,14 @@ class PrusaSlicerPanel(BasePanel):
             op.mountpoint=""
             
         row.operator(f"{PG_NAME_LC}.slice", text="Open with PrusaSlicer").mode="open"
-        row.enabled = False if pg.running else True
+        # row.enabled = False if pg.running else True
 
         if pg.print_time:
             row = layout.row()
             row.label(text=f"Printing time: {pg.print_time}")
         if pg.print_weight:
             row = layout.row()
-            row.label(text=f"Print weight: {pg.print_weight}")
+            row.label(text=f"Print weight: {pg.print_weight}g")
 
         row = layout.row()
         row.prop(pg, "progress", text=pg.progress_text, slider=True)

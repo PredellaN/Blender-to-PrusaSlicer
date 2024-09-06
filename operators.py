@@ -230,7 +230,8 @@ def show_preview(gcode_path):
         print("Gcode file not found: skipping preview.")
 
 def display_stats(ws, gcode_path):
-    print_time, print_weight = gf.parse_print_stats(gcode_path)
+    print_time = gf.parse_gcode(gcode_path, 'estimated printing time \(normal mode\)')
+    print_weight = gf.parse_gcode(gcode_path, 'filament used \[g\]')
     getattr(ws, PG_NAME_LC).print_time = print_time if print_time else None
     getattr(ws, PG_NAME_LC).print_weight = print_weight if print_weight else None
     
