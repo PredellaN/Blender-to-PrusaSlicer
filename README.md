@@ -1,6 +1,6 @@
 # Blender to PrusaSlicer
 
-![image](https://github.com/user-attachments/assets/94925990-3329-4e52-9700-27dc8e269551)
+![image](https://github.com/user-attachments/assets/9d0a8f40-cd94-46fe-8ec4-f63699a03aa9)
 
 ## Overview
 This Blender add-on integrates PrusaSlicer directly within Blender, allowing for seamless 3D model slicing and export to G-code without leaving the Blender environment.
