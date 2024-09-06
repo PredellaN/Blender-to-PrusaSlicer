@@ -1,9 +1,11 @@
 import bpy # type: ignore
-import os, subprocess, time, tempfile, threading
+import os, shutil, subprocess, time, tempfile, threading
+from collections import namedtuple
 from functools import partial
 
 from .functions.basic_functions import show_progress
 from .functions import blender_funcs as bf
+from .functions import gcode_funcs as gf
 from . import PG_NAME_LC
 
 temp_dir = tempfile.gettempdir()
@@ -69,45 +71,48 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
     
     def execute(self, context):
         ws = context.workspace
-        prop_group = getattr(ws, PG_NAME_LC)
+        pg = getattr(ws, PG_NAME_LC)
+
         blendfile_directory = os.path.dirname(bpy.data.filepath)
 
-        prop_group.running = 1
+        pg.running = 1
 
-        show_progress(ws, prop_group, 0, "Exporting STL...")
+        show_progress(ws, pg, 0, "Exporting STL...")
 
         obj_names = bf.names_array_from_objects(context.selected_objects)
 
         base_filename = "-".join(obj_names)
 
+        paths = namedtuple('Paths', ['ini_path', 'stl_path', 'stl_temp_path', 'gcode_path', 'gcode_temp_path'], defaults=[""]*5)
+
         stl_file_name = base_filename + ".stl"
-        stl_file_path = os.path.join(temp_dir, stl_file_name)
+        paths.stl_path = os.path.join(temp_dir, stl_file_name)
 
         global temp_files
         temp_files = []
 
-        bpy.ops.wm.stl_export(filepath=stl_file_path, global_scale=1000, export_selected_objects=True)
-        temp_files.append(stl_file_path)
+        bpy.ops.wm.stl_export(filepath=paths.stl_path, global_scale=1000, export_selected_objects=True)
+        temp_files.append(paths.stl_path)
 
-        show_progress(ws, prop_group, 10, "Preparing Configuration...")
+        show_progress(ws, pg, 10, "Preparing Configuration...")
         loader = bf.ConfigLoader()
-        if prop_group.use_single_config == False:
-            loader.load_config_from_path(prop_group.printer_config_file, append=False)
-            loader.load_config_from_path(prop_group.filament_config_file, append=True)
-            loader.load_config_from_path(prop_group.print_config_file, append=True)
+        if pg.use_single_config == False:
+            loader.load_config_from_path(pg.printer_config_file, append=False)
+            loader.load_config_from_path(pg.filament_config_file, append=True)
+            loader.load_config_from_path(pg.print_config_file, append=True)
         else:
-            loader.load_config_from_path(prop_group.config, append=False)
+            loader.load_config_from_path(pg.config, append=False)
 
         if not loader.config_dict:
-            show_progress(ws, prop_group, 30, 'Opening PrusaSlicer...')
-            command = [os.path.join(stl_file_path)]
+            show_progress(ws, pg, 30, 'Opening PrusaSlicer...')
+            command = [os.path.join(paths.stl_path)]
 
-            thread = threading.Thread(target=do_slice, args=[command, ws, None])
+            thread = threading.Thread(target=run_slice, args=[command, ws, None, None])
             thread.start()
 
             return {'FINISHED'}
 
-        loader.overrides_dict = bf.load_list_to_dict(prop_group.list)
+        loader.overrides_dict = bf.load_list_to_dict(pg.list)
         
         filament = loader.config_with_overrides['filament_type']
         printer = loader.config_with_overrides['printer_settings_id']
@@ -121,47 +126,83 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
             gcode_dir = blendfile_directory
         else:
             gcode_dir = temp_dir
-        gcode_path = os.path.join(gcode_dir, gcode_filename)
+        paths.gcode_path = os.path.join(gcode_dir, gcode_filename)
+        paths.gcode_temp_path = os.path.join(temp_dir, gcode_filename)
 
-        callback = partial(show_preview, gcode_path) if self.mode == "slice_and_preview" else None # if slicing to USB don't show a preview
-
-        ini_file_path = os.path.join(temp_dir, 'config.ini')
-        temp_files.append(loader.write_ini_file(ini_file_path))
-
-        if self.mode in ("slice", "slice_and_preview"):
-            show_progress(ws, prop_group, 30, 'Slicing with PrusaSlicer...')
-            command = [
-                "--load", ini_file_path, 
-                "-g", os.path.join(stl_file_path), 
-                "--output", os.path.join(gcode_path)
-            ]
+        paths.ini_path = os.path.join(temp_dir, 'config.ini')
+        temp_files.append(loader.write_ini_file(paths.ini_path))
 
         if self.mode == "open":
-            show_progress(ws, prop_group, 30, 'Opening PrusaSlicer...')
+            show_progress(ws, pg, 100, 'Opening PrusaSlicer...')
             command = [
-                "--load", ini_file_path, 
-                os.path.join(stl_file_path)
+                "--load", paths.ini_path, 
+                os.path.join(paths.stl_path)
+            ]
+            thread = threading.Thread(target=exec_prusaslicer, args=[command])
+            thread.start()
+
+            getattr(ws, PG_NAME_LC).running = 0
+            return {'FINISHED'}
+
+        if os.path.exists(paths.gcode_temp_path):
+            stl_chk = bf.calculate_md5(paths.stl_path)
+            ini_chk = bf.calculate_md5(paths.ini_path)
+            if stl_chk == gf.parse_gcode(paths.gcode_temp_path, 'stl_checksum') and ini_chk == gf.parse_gcode(paths.gcode_temp_path, 'ini_checksum'):
+                shutil.copy(paths.gcode_temp_path, paths.gcode_path)
+                if self.mode == "slice_and_preview":
+                    thread = threading.Thread(target=show_preview, args=[paths.gcode_path])
+                    thread.start()
+                show_progress(ws, getattr(ws, PG_NAME_LC), 100, f'Done (copied from cached gcode)')
+                display_stats(ws, paths.gcode_temp_path)
+
+                getattr(ws, PG_NAME_LC).running = 0
+                return {'FINISHED'}
+
+        if self.mode in ("slice", "slice_and_preview"):
+            show_progress(ws, pg, 30, 'Slicing with PrusaSlicer...')
+            command = [
+                "--load", paths.ini_path, 
+                "-g", os.path.join(paths.stl_path), 
+                "--output", os.path.join(paths.gcode_temp_path)
             ]
 
-        thread = threading.Thread(target=do_slice, args=[command, ws, callback])
-        thread.start()
+            callback = partial(show_preview, paths.gcode_path) if self.mode == "slice_and_preview" else None # if slicing to USB don't show a preview
+            thread = threading.Thread(target=run_slice, args=[command, ws, paths, callback])
+            thread.start()
 
-        return {'FINISHED'}
+            return {'FINISHED'}
+
+def run_slice(command, ws, paths, callback = None):
     
-def cleanup():
-    global temp_files
-    for file in temp_files:
-        os.remove(file)
-    temp_files = []
+    getattr(ws, PG_NAME_LC).print_time = ""
+    getattr(ws, PG_NAME_LC).print_weight = ""
 
-def show_preview(gcode_path):
-    if gcode_path and os.path.exists(gcode_path):
-        gcode_thread = threading.Thread(target=run_prusaslicer, args=[["--gcodeviewer", gcode_path]])
-        gcode_thread.start()
+    start_time = time.time()
+    res = exec_prusaslicer(command)
+    end_time = time.time()
+
+    if res:
+        show_progress(ws, getattr(ws, PG_NAME_LC), 100, f'Failed ({res})')
     else:
-        print("Gcode file not found: skipping preview.")
+        show_progress(ws, getattr(ws, PG_NAME_LC), 100, f'Done (in {(end_time - start_time):.2f}s)')
+        if paths.gcode_temp_path:
+            with open(paths.gcode_temp_path, 'a') as file:
+                file.write(f"; stl_checksum = {bf.calculate_md5(paths.stl_path)}\n")
+                file.write(f"; ini_checksum = {bf.calculate_md5(paths.ini_path)}\n")
+            
+            shutil.copy(paths.gcode_temp_path, paths.gcode_path)
+            display_stats(ws, paths.gcode_temp_path)
 
-def run_prusaslicer(command):
+    getattr(ws, PG_NAME_LC).running = 0
+
+    if callback:
+        callback()
+
+    cleanup()
+
+    return {'FINISHED'}
+
+def exec_prusaslicer(command):
     preferences = bpy.context.preferences.addons[__package__].preferences
     prusaslicer_path = preferences.prusaslicer_path
 
@@ -202,22 +243,20 @@ def err_to_tempfile(text):
     with open(temp_file_path, "w") as temp_file:
         temp_file.write(text)
 
-def do_slice(command, ws, callback = None):
-    
-    start_time = time.time()
-    res = run_prusaslicer(command)
-    end_time = time.time()
-
-    if res:
-        show_progress(ws, getattr(ws, PG_NAME_LC), 100, f'Failed ({res})')
+def show_preview(gcode_path):
+    if gcode_path and os.path.exists(gcode_path):
+        gcode_thread = threading.Thread(target=exec_prusaslicer, args=[["--gcodeviewer", gcode_path]])
+        gcode_thread.start()
     else:
-        show_progress(ws, getattr(ws, PG_NAME_LC), 100, f'Done (in {(end_time - start_time):.2f}s)')
+        print("Gcode file not found: skipping preview.")
 
-    getattr(ws, PG_NAME_LC).running = 0
-
-    if callback:
-        callback()
-
-    cleanup()
-
-    return {'FINISHED'}
+def display_stats(ws, gcode_path):
+    print_time, print_weight = gf.parse_print_stats(gcode_path)
+    getattr(ws, PG_NAME_LC).print_time = print_time if print_time else None
+    getattr(ws, PG_NAME_LC).print_weight = print_weight if print_weight else None
+    
+def cleanup():
+    global temp_files
+    for file in temp_files:
+        os.remove(file)
+    temp_files = []

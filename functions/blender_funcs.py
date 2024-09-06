@@ -4,6 +4,7 @@ import urllib.request
 import json
 import tempfile
 import re
+import hashlib
 
 from collections import Counter
 
@@ -112,3 +113,11 @@ def load_list_to_dict(list):
     for item in list:
         param_dict[item.param_id] = item.param_value
     return param_dict
+
+def calculate_md5(file_path):
+    md5_hash = hashlib.md5()
+    with open(file_path, "rb") as f:
+        # Read the file in chunks to avoid using too much memory
+        for byte_block in iter(lambda: f.read(4096), b""):
+            md5_hash.update(byte_block)
+    return md5_hash.hexdigest()

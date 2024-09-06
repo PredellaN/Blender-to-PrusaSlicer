@@ -36,4 +36,11 @@ class PrusaSlicerPropertyGroup(bpy.types.PropertyGroup):
     ) # type: ignore
 
     list : bpy.props.CollectionProperty(type=ParamsListItem) # type: ignore
-    list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: setattr(self, 'list_index', -1)) # Auto-deselect # type: ignore 
+    list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: setattr(self, 'list_index', -1)) # Auto-deselect # type: ignore
+
+    print_weight : bpy.props.StringProperty(name="") # type: ignore
+    print_time : bpy.props.StringProperty(name="") # type: ignore
+
+    cached_stl_chk : bpy.props.StringProperty() # type: ignore
+    cached_ini_chk : bpy.props.StringProperty() # type: ignore
+    cached_gcode_chk : bpy.props.StringProperty() # type: ignore
