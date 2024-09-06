@@ -129,7 +129,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         loader.overrides_dict = bf.load_list_to_dict(pg.list)
         
         filament = loader.config_with_overrides['filament_type']
-        printer = loader.config_with_overrides['printer_settings_id']
+        printer = loader.config_with_overrides['printer_model']
 
         extension = "bgcode" if loader.config_with_overrides['binary_gcode'] == '1' else "gcode"
         gcode_filename = f"{base_filename}-{filament}-{printer}.{extension}"
@@ -203,9 +203,10 @@ def run_slice(command, ws, paths, callback = None):
     else:
         
         if paths.gcode_temp_path:
-            with open(paths.gcode_temp_path, 'a') as file:
-                file.write(f"; stl_checksum = {bf.calculate_md5(paths.stl_path)}\n")
-                file.write(f"; ini_checksum = {bf.calculate_md5(paths.ini_path)}\n")
+            if "bgcode" not in paths.gcode_temp_path:
+                with open(paths.gcode_temp_path, 'a') as file:
+                    file.write(f"; stl_checksum = {bf.calculate_md5(paths.stl_path)}\n")
+                    file.write(f"; ini_checksum = {bf.calculate_md5(paths.ini_path)}\n")
             
             display_stats(ws, paths.gcode_temp_path)
             threaded_copy(paths.gcode_temp_path, paths.gcode_path)
