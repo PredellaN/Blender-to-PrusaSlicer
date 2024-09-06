@@ -14,7 +14,7 @@ class PRUSASLICER_UL_IdValue(bpy.types.UIList):
 
 class PrusaSlicerPanel(BasePanel):
     bl_label = "Blender to PrusaSlicer"
-    bl_idname = "SCENE_PT_PrusaSlicerPanel"
+    bl_idname = f"SCENE_PT_{PG_NAME_LC}"
 
     def draw(self, context):
         ws = context.workspace

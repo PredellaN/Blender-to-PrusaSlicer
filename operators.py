@@ -127,6 +127,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         extension = "bgcode" if loader.config_with_overrides['binary_gcode'] == '1' else "gcode"
         gcode_filename = f"{base_filename}-{filament}-{printer}.{extension}"
 
+        append_done = ""
         if self.mountpoint:
             gcode_dir = self.mountpoint
             append_done = f" to {gcode_dir.split('/')[-1]}"
