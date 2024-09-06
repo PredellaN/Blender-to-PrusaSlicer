@@ -34,5 +34,9 @@ Slice models and open them in PrusaSlicer directly from Blender.
 - Blender 4.2.0 or higher.
 - PrusaSlicer installed and accessible from the command line.
 
+## Troubleshooting
+- If after installing the dependencies the addon doesn't reload correctly, close and re-open blender. 
+- If using a sandboxed PrusaSlicer such as the flatpak version, make sure PrusaSlicer can write temporary files (in Linux, this means being allowed to write to /tmp/ ).
+
 ## License
 This project is licensed under the MIT License.
