@@ -4,7 +4,7 @@ def parse_gcode(file_path, name):
     val = None
     pattern = re.compile(rb'^;? ?' + name.encode('utf-8') + rb' ?= ?(.+)$')
     with open(file_path, 'rb') as file:  # Open in binary mode
-        lines = file.readlines() # Read all lines and reverse the order
+        lines = file.readlines()[::-1] # Read all lines and reverse the order
         for line in lines:
             try:
                 # Attempt to decode each line as UTF-8
