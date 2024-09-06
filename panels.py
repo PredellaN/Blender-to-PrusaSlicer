@@ -50,6 +50,7 @@ class PrusaSlicerPanel(BasePanel):
             op.mountpoint=""
             
         row.operator(f"{PG_NAME_LC}.slice", text="Open with PrusaSlicer").mode="open"
+        row.enabled = False if pg.running else True
 
         if pg.print_time:
             row = layout.row()

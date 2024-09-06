@@ -1,9 +1,10 @@
 import bpy # type: ignore
+
 import os, shutil, subprocess, time, tempfile, threading
 from collections import namedtuple
 from functools import partial
 
-from .functions.basic_functions import show_progress
+from .functions.basic_functions import show_progress, threaded_copy
 from .functions import blender_funcs as bf
 from .functions import gcode_funcs as gf
 from . import PG_NAME_LC
@@ -81,6 +82,11 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
         obj_names = bf.names_array_from_objects(context.selected_objects)
 
+        if not len(obj_names):
+            show_progress(ws, getattr(ws, PG_NAME_LC), 0, f'Error: selection empty')
+            getattr(ws, PG_NAME_LC).running = 0
+            return{'FINISHED'}
+
         base_filename = "-".join(obj_names)
 
         paths = namedtuple('Paths', ['ini_path', 'stl_path', 'stl_temp_path', 'gcode_path', 'gcode_temp_path'], defaults=[""]*5)
@@ -95,6 +101,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         temp_files.append(paths.stl_path)
 
         show_progress(ws, pg, 10, "Preparing Configuration...")
+
         loader = bf.ConfigLoader()
         if pg.use_single_config == False:
             loader.load_config_from_path(pg.printer_config_file, append=False)
@@ -122,6 +129,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
         if self.mountpoint:
             gcode_dir = self.mountpoint
+            append_done = f" to {gcode_dir.split('/')[-1]}"
         elif blendfile_directory:
             gcode_dir = blendfile_directory
         else:
@@ -148,11 +156,12 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
             stl_chk = bf.calculate_md5(paths.stl_path)
             ini_chk = bf.calculate_md5(paths.ini_path)
             if stl_chk == gf.parse_gcode(paths.gcode_temp_path, 'stl_checksum') and ini_chk == gf.parse_gcode(paths.gcode_temp_path, 'ini_checksum'):
-                shutil.copy(paths.gcode_temp_path, paths.gcode_path)
+
+                threaded_copy(paths.gcode_temp_path, paths.gcode_path)
                 if self.mode == "slice_and_preview":
-                    thread = threading.Thread(target=show_preview, args=[paths.gcode_path])
+                    thread = threading.Thread(target=show_preview, args=[paths.gcode_temp_path])
                     thread.start()
-                show_progress(ws, getattr(ws, PG_NAME_LC), 100, f'Done (copied from cached gcode)')
+                show_progress(ws, getattr(ws, PG_NAME_LC), 100, f'Done (copied from cached gcode){append_done}')
                 display_stats(ws, paths.gcode_temp_path)
 
                 getattr(ws, PG_NAME_LC).running = 0
@@ -166,7 +175,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
                 "--output", os.path.join(paths.gcode_temp_path)
             ]
 
-            callback = partial(show_preview, paths.gcode_path) if self.mode == "slice_and_preview" else None # if slicing to USB don't show a preview
+            callback = partial(show_preview, paths.gcode_temp_path) if self.mode == "slice_and_preview" else None # if slicing to USB don't show a preview
             thread = threading.Thread(target=run_slice, args=[command, ws, paths, callback])
             thread.start()
 
@@ -179,20 +188,23 @@ def run_slice(command, ws, paths, callback = None):
 
     start_time = time.time()
     res = exec_prusaslicer(command)
-    end_time = time.time()
-
+    
     if res:
-        show_progress(ws, getattr(ws, PG_NAME_LC), 100, f'Failed ({res})')
+        end_time = time.time()
+        show_progress(ws, getattr(ws, PG_NAME_LC), 0, f'Failed ({res})')
     else:
-        show_progress(ws, getattr(ws, PG_NAME_LC), 100, f'Done (in {(end_time - start_time):.2f}s)')
+        
         if paths.gcode_temp_path:
             with open(paths.gcode_temp_path, 'a') as file:
                 file.write(f"; stl_checksum = {bf.calculate_md5(paths.stl_path)}\n")
                 file.write(f"; ini_checksum = {bf.calculate_md5(paths.ini_path)}\n")
             
-            shutil.copy(paths.gcode_temp_path, paths.gcode_path)
             display_stats(ws, paths.gcode_temp_path)
-
+            threaded_copy(paths.gcode_temp_path, paths.gcode_path)
+            
+        end_time = time.time()
+        show_progress(ws, getattr(ws, PG_NAME_LC), 100, f'Done (in {(end_time - start_time):.2f}s)')
+            
     getattr(ws, PG_NAME_LC).running = 0
 
     if callback:

@@ -1,6 +1,8 @@
 import bpy
 
 import time
+import shutil
+import threading
 import platform
 
 import cProfile
@@ -35,6 +37,10 @@ def is_usb_device(partition):
         return 'removable' in partition.opts.lower()
     else:
         return 'usb' in partition.opts or "/media" in partition.mountpoint
+
+def threaded_copy(from_file, to_file):
+    thread = threading.Thread(target=shutil.copy, args=[from_file, to_file])
+    thread.start()
 
 def show_progress(ws, ref, progress, progress_text = ""):
     setattr(ref, 'progress', progress)
