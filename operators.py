@@ -1,8 +1,10 @@
 import bpy # type: ignore
 
-import os, shutil, subprocess, time, tempfile, threading
+import os, subprocess, time, tempfile, threading
 from collections import namedtuple
 from functools import partial
+
+from .functions import prusaslicer_funcs as psf 
 
 from .functions.basic_functions import show_progress, threaded_copy
 from .functions import blender_funcs as bf
@@ -74,6 +76,10 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         ws = context.workspace
         pg = getattr(ws, PG_NAME_LC)
 
+        preferences = bpy.context.preferences.addons[__package__].preferences
+        global prusaslicer_path
+        prusaslicer_path = preferences.prusaslicer_path
+
         blendfile_directory = os.path.dirname(bpy.data.filepath)
 
         pg.running = 1
@@ -111,12 +117,13 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
             loader.load_config_from_path(pg.config, append=False)
 
         if not loader.config_dict:
-            show_progress(ws, pg, 30, 'Opening PrusaSlicer...')
+            show_progress(ws, pg, 100, 'Opening PrusaSlicer')
             command = [os.path.join(paths.stl_path)]
 
             thread = threading.Thread(target=run_slice, args=[command, ws, None, None])
             thread.start()
 
+            getattr(ws, PG_NAME_LC).running = 0
             return {'FINISHED'}
 
         loader.overrides_dict = bf.load_list_to_dict(pg.list)
@@ -142,12 +149,12 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         temp_files.append(loader.write_ini_file(paths.ini_path))
 
         if self.mode == "open":
-            show_progress(ws, pg, 100, 'Opening PrusaSlicer...')
+            show_progress(ws, pg, 100, 'Opening PrusaSlicer')
             command = [
                 "--load", paths.ini_path, 
                 os.path.join(paths.stl_path)
             ]
-            thread = threading.Thread(target=exec_prusaslicer, args=[command])
+            thread = threading.Thread(target=psf.exec_prusaslicer, args=[command, prusaslicer_path])
             thread.start()
 
             getattr(ws, PG_NAME_LC).running = 0
@@ -188,7 +195,7 @@ def run_slice(command, ws, paths, callback = None):
     getattr(ws, PG_NAME_LC).print_weight = ""
 
     start_time = time.time()
-    res = exec_prusaslicer(command)
+    res = psf.exec_prusaslicer(command, prusaslicer_path)
     
     if res:
         end_time = time.time()
@@ -215,50 +222,9 @@ def run_slice(command, ws, paths, callback = None):
 
     return {'FINISHED'}
 
-def exec_prusaslicer(command):
-    preferences = bpy.context.preferences.addons[__package__].preferences
-    prusaslicer_path = preferences.prusaslicer_path
-
-    if os.path.exists(prusaslicer_path):
-        command=[f'{prusaslicer_path}'] + command
-    else:
-        command=[*prusaslicer_path.split() + command]
-
-    print(f"Running command: {' '.join(command)}")
-
-    try:
-        result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-
-    except subprocess.CalledProcessError as e:
-        print(f"Command failed with return code {e.returncode}")
-
-        if e.stderr:
-            print("PrusaSlicer error output:")
-            print(e.stderr)
-
-    if result.stdout:
-        print("PrusaSlicer output:")
-        print(result.stdout)
-        for line in result.stdout.splitlines():
-            if "[error]" in line.lower():
-                error_part = line.lower().split("[error]", 1)[1].strip()
-                err_to_tempfile(result.stdout)
-                return error_part
-            
-            if "slicing result exported" in line.lower():
-                return
-            
-        err_to_tempfile(result.stdout)
-        return "No error message returned, check your model size"
-
-def err_to_tempfile(text):
-    temp_file_path = os.path.join(temp_dir, "prusa_slicer_err_output.txt")
-    with open(temp_file_path, "w") as temp_file:
-        temp_file.write(text)
-
 def show_preview(gcode_path):
     if gcode_path and os.path.exists(gcode_path):
-        gcode_thread = threading.Thread(target=exec_prusaslicer, args=[["--gcodeviewer", gcode_path]])
+        gcode_thread = threading.Thread(target=psf.exec_prusaslicer, args=[["--gcodeviewer", gcode_path], prusaslicer_path])
         gcode_thread.start()
     else:
         print("Gcode file not found: skipping preview.")
