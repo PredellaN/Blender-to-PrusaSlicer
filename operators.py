@@ -1,6 +1,6 @@
 import bpy # type: ignore
 
-import os, subprocess, time, tempfile, threading
+import os, subprocess, time, tempfile, threading, json
 from collections import namedtuple
 from functools import partial
 
@@ -95,7 +95,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
         base_filename = "-".join(obj_names)
 
-        paths = namedtuple('Paths', ['ini_path', 'stl_path', 'stl_temp_path', 'gcode_path', 'gcode_temp_path'], defaults=[""]*5)
+        paths = namedtuple('Paths', ['ini_path', 'stl_path', 'stl_temp_path', 'gcode_path', 'gcode_temp_path', 'json_temp_path'], defaults=[""]*5)
 
         stl_file_name = base_filename + ".stl"
         paths.stl_path = os.path.join(temp_dir, stl_file_name)
@@ -132,7 +132,9 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         printer = loader.config_with_overrides['printer_model']
 
         extension = "bgcode" if loader.config_with_overrides['binary_gcode'] == '1' else "gcode"
-        gcode_filename = f"{base_filename}-{filament}-{printer}.{extension}"
+        filename = f"{base_filename}-{filament}-{printer}"
+        gcode_filename = f"{filename}.{extension}"
+        json_filename = f"{filename}.json"
 
         append_done = ""
         if self.mountpoint:
@@ -144,6 +146,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
             gcode_dir = temp_dir
         paths.gcode_path = os.path.join(gcode_dir, gcode_filename)
         paths.gcode_temp_path = os.path.join(temp_dir, gcode_filename)
+        paths.json_temp_path = os.path.join(temp_dir, json_filename)
 
         paths.ini_path = os.path.join(temp_dir, 'config.ini')
         temp_files.append(loader.write_ini_file(paths.ini_path))
@@ -160,10 +163,13 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
             getattr(ws, PG_NAME_LC).running = 0
             return {'FINISHED'}
 
-        if os.path.exists(paths.gcode_temp_path):
+        if os.path.exists(paths.gcode_temp_path) and os.path.exists(paths.json_temp_path):
+            with open(paths.json_temp_path, 'r') as file:
+                cached_data = json.load(file)
             stl_chk = bf.calculate_md5(paths.stl_path)
             ini_chk = bf.calculate_md5(paths.ini_path)
-            if stl_chk == gf.parse_gcode(paths.gcode_temp_path, 'stl_checksum') and ini_chk == gf.parse_gcode(paths.gcode_temp_path, 'ini_checksum'):
+
+            if stl_chk == cached_data.get('stl_chk') and ini_chk == cached_data.get('ini_chk'):
 
                 threaded_copy(paths.gcode_temp_path, paths.gcode_path)
                 if self.mode == "slice_and_preview":
@@ -203,10 +209,12 @@ def run_slice(command, ws, paths, callback = None):
     else:
         
         if paths.gcode_temp_path:
-            if "bgcode" not in paths.gcode_temp_path:
-                with open(paths.gcode_temp_path, 'a') as file:
-                    file.write(f"; stl_checksum = {bf.calculate_md5(paths.stl_path)}\n")
-                    file.write(f"; ini_checksum = {bf.calculate_md5(paths.ini_path)}\n")
+            checksums = {
+                "stl_chk": bf.calculate_md5(paths.stl_path),
+                "ini_chk": bf.calculate_md5(paths.ini_path)
+            }
+            with open(paths.json_temp_path, 'w') as json_file:
+                json.dump(checksums, json_file, indent=4)
             
             display_stats(ws, paths.gcode_temp_path)
             threaded_copy(paths.gcode_temp_path, paths.gcode_path)
@@ -233,8 +241,8 @@ def show_preview(gcode_path):
 def display_stats(ws, gcode_path):
     print_time = gf.parse_gcode(gcode_path, 'estimated printing time \(normal mode\)')
     print_weight = gf.parse_gcode(gcode_path, 'filament used \[g\]')
-    getattr(ws, PG_NAME_LC).print_time = print_time if print_time else None
-    getattr(ws, PG_NAME_LC).print_weight = print_weight if print_weight else None
+    getattr(ws, PG_NAME_LC).print_time = print_time if print_time else ""
+    getattr(ws, PG_NAME_LC).print_weight = print_weight if print_weight else ""
     
 def cleanup():
     global temp_files

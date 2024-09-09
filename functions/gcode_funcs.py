@@ -7,11 +7,9 @@ def parse_gcode(file_path, name):
         lines = file.readlines()[::-1] # Read all lines and reverse the order
         for line in lines:
             try:
-                # Attempt to decode each line as UTF-8
                 val = pattern.search(line)
                 if val:
-                    return val.group(1).decode('utf-8')  # Return the decoded match
+                    return val.group(1).decode()
             except UnicodeDecodeError:
-                # If a line contains binary data that can't be decoded, skip it
                 continue
     return None
