@@ -121,3 +121,16 @@ def calculate_md5(file_path):
         for byte_block in iter(lambda: f.read(4096), b""):
             md5_hash.update(byte_block)
     return md5_hash.hexdigest()
+
+def coll_from_selection():
+    cx = None
+    for obj in bpy.context.selected_objects:
+        for coll in bpy.data.collections:
+            if obj in [o for o in coll.objects]:
+                cx = coll
+                break
+        if cx:
+            break
+    if not cx:
+        cx = bpy.context.scene.collection
+    return cx

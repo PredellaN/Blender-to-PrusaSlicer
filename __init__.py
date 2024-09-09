@@ -44,7 +44,7 @@ def register():
     mod.reload_modules([op, pn, pg])
     registered_classes.extend(mod.register_classes(mod.get_classes([op,pn,pg])))
 
-    setattr(bpy.types.WorkSpace, PG_NAME_LC, bpy.props.PointerProperty(type=pg.PrusaSlicerPropertyGroup))
+    setattr(bpy.types.Collection, PG_NAME_LC, bpy.props.PointerProperty(type=pg.PrusaSlicerPropertyGroup))
 
 def unregister():   
     from .functions import modules as mod

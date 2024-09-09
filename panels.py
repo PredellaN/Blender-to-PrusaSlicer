@@ -1,5 +1,6 @@
 import bpy # type: ignore
 from .functions.basic_functions import BasePanel, is_usb_device
+from .functions import blender_funcs as bf
 from . import PG_NAME_LC, dependencies_installed
 
 class PRUSASLICER_UL_IdValue(bpy.types.UIList):
@@ -17,8 +18,8 @@ class PrusaSlicerPanel(BasePanel):
     bl_idname = f"SCENE_PT_{PG_NAME_LC}"
 
     def draw(self, context):
-        ws = context.workspace
-        pg = getattr(ws, PG_NAME_LC)
+        cx = bf.coll_from_selection()
+        pg = getattr(cx, PG_NAME_LC)
 
         layout = self.layout
 
@@ -84,6 +85,17 @@ class PrusaSlicerPanel(BasePanel):
                     op.mountpoint=mountpoint
                     op.mode = "slice"
                     row.label(text=f"{mountpoint.split('/')[-1]} mounted at {mountpoint} ({partition.device})")
+
+class SlicerPanel_0_Overrides(BasePanel):
+    bl_label = "Overrides"
+    bl_idname = f"SCENE_PT_{PG_NAME_LC}_Overrides"
+    bl_parent_id = f"SCENE_PT_{PG_NAME_LC}"
+
+    def draw(self, context):
+        cx = bf.coll_from_selection()
+        pg = getattr(cx, PG_NAME_LC)
+
+        layout = self.layout
 
         ### Config Overrides
 
