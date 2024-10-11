@@ -1,6 +1,6 @@
 # Blender to PrusaSlicer
 
-![image](https://github.com/user-attachments/assets/9d0a8f40-cd94-46fe-8ec4-f63699a03aa9)
+![image](https://github.com/user-attachments/assets/e0de7e36-b95b-4050-99c0-13818f1c77e5)
 
 ## Overview
 This Blender add-on integrates PrusaSlicer directly within Blender, allowing for seamless 3D model slicing and export to G-code without leaving the Blender environment.
@@ -8,6 +8,7 @@ This Blender add-on integrates PrusaSlicer directly within Blender, allowing for
 ## Features
 Slice models and open them in PrusaSlicer directly from Blender.
 - Import configurations either as a single .ini file (You can export this configuration file from a PrusaSlicer project using File > Export > Export Config.) or individual configuration files for printer, filament and print. URLs are also supported, which enables to for example fetch automatically the latest production version of the configuration.
+- Collection-based slicing: the settings are stored at a collection level: when selecting different objects to slice, the active configuration will reflect the current selection. This is especially useful when creating files for multiple printers.
 - Slicing directly to USB devices.
 - Customizing the slicing using overrides. The original configuration file itself will remain unchaged. After slicing one time, the base configuration will be loaded in an internal text file named "prusaslicer_configuration.json".
 
@@ -35,7 +36,7 @@ Slice models and open them in PrusaSlicer directly from Blender.
 - PrusaSlicer installed and accessible from the command line.
 
 ## Troubleshooting
-- If after installing the dependencies the addon doesn't reload correctly, close and re-open blender. 
+- If after installing the dependencies the addon doesn't reload correctly, close and re-open blender, and re-activate the addon.
 - If using a sandboxed PrusaSlicer such as the flatpak version, make sure PrusaSlicer can write temporary files (in Linux, this means being allowed to write to /tmp/ ).
 
 ## License
