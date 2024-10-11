@@ -29,16 +29,17 @@ def exec_prusaslicer(command, prusaslicer_path):
         for line in result.stdout.splitlines():
             if "[error]" in line.lower():
                 error_part = line.lower().split("[error]", 1)[1].strip()
-                err_to_tempfile(result.stdout)
+                err_to_tempfile(result.stderr)
                 return error_part
 
             if "slicing result exported" in line.lower():
                 return
 
-        err_to_tempfile(result.stdout)
-        return "No error message returned, check your model size"
+        tempfile = err_to_tempfile(result.stderr + "\n\n" + result.stdout)
+        return f"Slicing failed, error log at {tempfile}."
     
 def err_to_tempfile(text):
     temp_file_path = os.path.join(temp_dir, "prusa_slicer_err_output.txt")
     with open(temp_file_path, "w") as temp_file:
         temp_file.write(text)
+    return temp_file_path

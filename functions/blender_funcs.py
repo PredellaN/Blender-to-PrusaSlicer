@@ -45,7 +45,11 @@ class ConfigLoader:
 
         self.original_file_path = path
         if path.startswith('http://') or path.startswith('https://'):
-            response = urllib.request.urlopen(path)
+            request = urllib.request.Request(
+                path, 
+                headers={'Cache-Control': 'no-cache', 'Pragma': 'no-cache'}
+            )
+            response = urllib.request.urlopen(request)
             file_content = response.read().decode('utf-8')
 
             temp_path = os.path.join(self.temp_dir, 'config.ini')

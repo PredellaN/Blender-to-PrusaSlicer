@@ -104,7 +104,8 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         global temp_files
         temp_files = []
 
-        bpy.ops.wm.stl_export(filepath=paths.stl_path, global_scale=1000, export_selected_objects=True)
+        unit_scale = context.scene.unit_settings.scale_length
+        bpy.ops.wm.stl_export(filepath=paths.stl_path, global_scale=1000*unit_scale, export_selected_objects=True)
         temp_files.append(paths.stl_path)
 
         show_progress(ws, pg, 10, "Preparing Configuration...")
