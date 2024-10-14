@@ -1,8 +1,16 @@
 import bpy
+from . import blender_globals
 
 class ParamsListItem(bpy.types.PropertyGroup):
     param_id: bpy.props.StringProperty(name='') # type: ignore
     param_value: bpy.props.StringProperty(name='') # type: ignore
+
+def sorted_enums(filter):
+    if 'print_profiles' in blender_globals:
+        profiles = blender_globals['print_profiles']
+        enums = [(item['absolute_path'], item['id'], item['absolute_path']) for item in profiles if item['type'] == filter] + [("", "", "")]
+        return sorted(enums, key=lambda x: x[1])
+    return [("","","")]
 
 class PrusaSlicerPropertyGroup(bpy.types.PropertyGroup):
     running: bpy.props.BoolProperty(name="is running", default=0) # type: ignore
@@ -33,6 +41,24 @@ class PrusaSlicerPropertyGroup(bpy.types.PropertyGroup):
     print_config_file: bpy.props.StringProperty(
         name="Print Configuration (.ini)",
         subtype='FILE_PATH'
+    ) # type: ignore
+
+    printer_config_file_enum: bpy.props.EnumProperty(
+        name="Printer Configuration",
+        items=lambda self, context: sorted_enums('printer'),
+        update=lambda self, context: setattr(self, 'printer_config_file', self.printer_config_file_enum),
+    ) # type: ignore
+
+    filament_config_file_enum: bpy.props.EnumProperty(
+        name="Filament Configuration",
+        items=lambda self, context: sorted_enums('filament'),
+        update=lambda self, context: setattr(self, 'filament_config_file', self.filament_config_file_enum),
+    ) # type: ignore
+
+    print_config_file_enum: bpy.props.EnumProperty(
+        name="Print Configuration",
+        items=lambda self, context: sorted_enums('print'),
+        update=lambda self, context: setattr(self, 'print_config_file', self.print_config_file_enum),
     ) # type: ignore
 
     list : bpy.props.CollectionProperty(type=ParamsListItem) # type: ignore

@@ -19,12 +19,13 @@ bl_info = {
     "author" : "Nicolas Predella",
     "description" : "",
     "blender" : (4, 2, 0),
-    "version" : (0, 0, 2),  
+    "version" : (0, 0, 3),  
     "location" : "",
     "warning" : "",
 }
 registered_classes = []
 dependencies_installed = False
+blender_globals = {}
 sys.path.append(DEPENDENCIES_FOLDER)
 
 
@@ -37,6 +38,10 @@ def register():
     from . import preferences as pref
     mod.reload_modules([pref])
     registered_classes.extend(mod.register_classes(mod.get_classes([pref])))
+    preferences = bpy.context.preferences.addons[__package__].preferences
+
+    from .functions import ui_functions as uf
+    uf.update_manifest(preferences)
 
     from . import operators as op
     from . import panels as pn

@@ -45,8 +45,9 @@ class ConfigLoader:
 
         self.original_file_path = path
         if path.startswith('http://') or path.startswith('https://'):
+            encoded_path = urllib.parse.quote(path, safe="%/:=&?")
             request = urllib.request.Request(
-                path, 
+                encoded_path, 
                 headers={'Cache-Control': 'no-cache', 'Pragma': 'no-cache'}
             )
             response = urllib.request.urlopen(request)

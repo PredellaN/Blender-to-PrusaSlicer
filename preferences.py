@@ -1,8 +1,9 @@
 import bpy, os
 import subprocess
 from .functions import modules as mod
+from .functions import ui_functions as uf
 from . import PG_NAME_LC, DEPENDENCIES, DEPENDENCIES_FOLDER
-from . import register, unregister, dependencies_installed  # Import the unregister and register functions
+from . import register, unregister, dependencies_installed, blender_globals  # Import the unregister and register functions
 
 class EXAMPLE_OT_install_dependencies(bpy.types.Operator):
     bl_idname = f"{PG_NAME_LC}.install_dependencies"
@@ -36,9 +37,20 @@ class PrusaSlicerPreferences(bpy.types.AddonPreferences):
         default="flatpak run com.prusa3d.PrusaSlicer"
     ) #type: ignore
 
+    manifest_path: bpy.props.StringProperty(
+        name="Manifest Path",
+        description="Path to a configuration manifest (optional)",
+        subtype='FILE_PATH',
+        default="",
+        update=lambda self, context: uf.update_manifest(self),
+    ) #type: ignore
+
     def draw(self, context):
         layout = self.layout
         layout.prop(self, "prusaslicer_path")
+
+        layout = self.layout
+        layout.prop(self, "manifest_path")
 
         layout = self.layout
         if dependencies_installed:

@@ -1,7 +1,7 @@
 import bpy # type: ignore
 from .functions.basic_functions import BasePanel, is_usb_device
 from .functions import blender_funcs as bf
-from . import PG_NAME_LC, dependencies_installed
+from . import PG_NAME_LC, dependencies_installed, blender_globals
 
 class PRUSASLICER_UL_IdValue(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -25,20 +25,32 @@ class PrusaSlicerPanel(BasePanel):
 
         # Toggle button for single or multiple configuration files
         row = layout.row()
-        row.prop(pg, "use_single_config", text="Use Single Configuration")
 
-        if pg.use_single_config:
+        global blender_globals
+        if len(blender_globals['print_profiles']) > 0:
             row = layout.row()
-            row.prop(pg, "config", text="Configuration (.ini)")
+            row.prop(pg, "printer_config_file_enum", text="Printer")
+            
+            row = layout.row()
+            row.prop(pg, "filament_config_file_enum", text="Filament")
+            
+            row = layout.row()
+            row.prop(pg, "print_config_file_enum", text="Print")
+
         else:
-            row = layout.row()
-            row.prop(pg, "printer_config_file", text="Printer (.ini)")
-            
-            row = layout.row()
-            row.prop(pg, "filament_config_file", text="Filament (.ini)")
-            
-            row = layout.row()
-            row.prop(pg, "print_config_file", text="Print (.ini)")
+            row.prop(pg, "use_single_config", text="Use Single Configuration")
+            if pg.use_single_config:
+                row = layout.row()
+                row.prop(pg, "config", text="Configuration (.ini)")
+            else:
+                row = layout.row()
+                row.prop(pg, "printer_config_file", text="Printer (.ini)")
+                
+                row = layout.row()
+                row.prop(pg, "filament_config_file", text="Filament (.ini)")
+                
+                row = layout.row()
+                row.prop(pg, "print_config_file", text="Print (.ini)")
 
         row = layout.row()
         if (pg.use_single_config and pg.config) or (not pg.use_single_config and pg.printer_config_file and pg.filament_config_file and pg.print_config_file):
