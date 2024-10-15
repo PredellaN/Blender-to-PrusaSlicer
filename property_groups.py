@@ -8,7 +8,7 @@ class ParamsListItem(bpy.types.PropertyGroup):
 def sorted_enums(filter):
     if 'print_profiles' in blender_globals:
         profiles = blender_globals['print_profiles']
-        enums = [(item['absolute_path'], item['id'], item['absolute_path']) for item in profiles if item['type'] == filter] + [("", "", "")]
+        enums = [(item['absolute_path'], item['label'], item['absolute_path']) for item in profiles if item['type'] == filter] + [("", "", "")]
         return sorted(enums, key=lambda x: x[1])
     return [("","","")]
 

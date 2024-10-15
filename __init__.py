@@ -17,7 +17,7 @@ DEPENDENCIES = (
 bl_info = {
     "name" : "Blender To PrusaSlicer",
     "author" : "Nicolas Predella",
-    "description" : "",
+    "description" : "PrusaSlicer integration into Blender",
     "blender" : (4, 2, 0),
     "version" : (0, 0, 3),  
     "location" : "",
