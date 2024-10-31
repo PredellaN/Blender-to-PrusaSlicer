@@ -23,6 +23,8 @@ bl_info = {
     "location" : "",
     "warning" : "",
 }
+
+### Initialization
 registered_classes = []
 dependencies_installed = False
 blender_globals = {}

@@ -27,7 +27,9 @@ class PrusaSlicerPanel(BasePanel):
         row = layout.row()
 
         global blender_globals
-        if len(blender_globals['print_profiles']) > 0:
+        sliceable = (pg.use_single_config and pg.config) or ((not pg.use_single_config or blender_globals["uses_manifest"]) and pg.printer_config_file and pg.filament_config_file and pg.print_config_file)
+
+        if blender_globals["uses_manifest"]:
             row = layout.row()
             row.prop(pg, "printer_config_file_enum", text="Printer")
             
@@ -53,7 +55,8 @@ class PrusaSlicerPanel(BasePanel):
                 row.prop(pg, "print_config_file", text="Print (.ini)")
 
         row = layout.row()
-        if (pg.use_single_config and pg.config) or (not pg.use_single_config and pg.printer_config_file and pg.filament_config_file and pg.print_config_file):
+
+        if sliceable:
             
             op = row.operator(f"{PG_NAME_LC}.slice", text="Slice", icon="ALIGN_JUSTIFY")
             op.mode="slice"

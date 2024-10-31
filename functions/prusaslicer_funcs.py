@@ -17,11 +17,11 @@ def exec_prusaslicer(command, prusaslicer_path):
         result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
     except subprocess.CalledProcessError as e:
-        print(f"Command failed with return code {e.returncode}")
-
         if e.stderr:
             print("PrusaSlicer error output:")
             print(e.stderr)
+            return f"PrusaSlicer failed with error output: {e.stderr}"
+        return f"PrusaSlicer failed with return code {e.returncode}"
 
     if result.stdout:
         print("PrusaSlicer output:")

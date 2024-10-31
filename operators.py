@@ -9,7 +9,7 @@ from .functions import prusaslicer_funcs as psf
 from .functions.basic_functions import show_progress, threaded_copy
 from .functions import blender_funcs as bf
 from .functions import gcode_funcs as gf
-from . import PG_NAME_LC
+from . import PG_NAME_LC, blender_globals
 
 temp_dir = tempfile.gettempdir()
 temp_files = []
@@ -163,7 +163,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
             show_progress(ws, pg, 100, 'Opening PrusaSlicer')
             command = [
                 "--load", paths.ini_path, 
-                os.path.join(paths.stl_path)
+                os.path.join(paths.stl_path),
             ]
             thread = threading.Thread(target=psf.exec_prusaslicer, args=[command, prusaslicer_path])
             thread.start()
@@ -193,7 +193,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
             show_progress(ws, pg, 30, 'Slicing with PrusaSlicer...')
             command = [
                 "--load", paths.ini_path, 
-                "-g", os.path.join(paths.stl_path), 
+                "-g", os.path.join(paths.stl_path),
                 "--output", os.path.join(paths.gcode_temp_path)
             ]
 

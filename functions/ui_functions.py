@@ -7,6 +7,7 @@ from .. import blender_globals
 def update_manifest(preferences):
     global blender_globals
     blender_globals["print_profiles"] = load_manifest(preferences.manifest_path)
+    blender_globals["uses_manifest"] = len(blender_globals['print_profiles']) > 0
     return
 
 def load_manifest(profiles_manifest_path):

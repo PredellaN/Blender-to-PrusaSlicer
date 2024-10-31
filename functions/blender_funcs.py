@@ -5,6 +5,8 @@ import json
 import tempfile
 import re
 import hashlib
+import numpy as np
+import struct
 
 from collections import Counter
 
@@ -139,3 +141,63 @@ def coll_from_selection():
     if not cx:
         cx = bpy.context.scene.collection
     return cx
+
+def objects_to_tris(selected_objects, scale):
+    tris_count = sum(len(obj.data.loop_triangles) for obj in selected_objects)
+    tris = np.empty(tris_count * 4 * 3, dtype=np.float64).reshape(-1, 4, 3)
+
+    col_idx = 0
+    for obj in selected_objects:
+        mesh = obj.data
+        curr_tris_count = len(mesh.loop_triangles)
+        curr_vert_count = len(mesh.vertices)
+
+        tris_v_i = np.empty(curr_tris_count * 3, dtype=np.int32)
+        mesh.loop_triangles.foreach_get("vertices", tris_v_i)
+        tris_v_i = tris_v_i.reshape((-1, 3))
+
+        tris_v_n = np.empty(curr_tris_count * 3)
+        mesh.loop_triangles.foreach_get("normal", tris_v_n)
+        tris_v_n = tris_v_n.reshape((-1, 3))
+
+        tris_verts = np.empty(curr_vert_count * 3)
+        mesh.vertices.foreach_get("co", tris_verts)
+        tris_verts = tris_verts.reshape((-1, 3))
+        
+        world_matrix = np.array(obj.matrix_world.transposed())
+
+        homogeneous_verts = np.hstack((tris_verts, np.ones((tris_verts.shape[0], 1))))
+        transformed_verts = homogeneous_verts @ world_matrix
+        transformed_verts = (transformed_verts[:, :3]) * scale
+
+        homogeneous_norm = np.hstack((tris_v_n, np.ones((tris_v_n.shape[0], 1))))
+        transformed_norm = homogeneous_norm @ world_matrix.T
+        transformed_norm = transformed_norm[:, :3]
+        transformed_norm = transformed_norm / np.linalg.norm(transformed_norm, axis=1, keepdims=True)
+
+        tris_coords = transformed_verts[tris_v_i]
+        tris_coords_and_norm = np.concatenate((tris_coords, transformed_norm[:, np.newaxis, :]), axis=1)
+        
+        tris[col_idx:col_idx + curr_tris_count,:] = tris_coords_and_norm
+        
+        col_idx += curr_tris_count
+
+    return tris
+
+def transform_tris(tris, v=np.array([.0, .0, .0])):
+    tris[:, :3] += v
+    return tris
+
+def scale_tris(tris, s=0):
+    tris[:, :3] *= s
+    return tris
+
+def save_stl(tris, filename):
+    header = b'\0' * 80 + struct.pack('<I', tris.shape[0])
+
+    with open(filename, 'wb') as f:
+        f.write(header)
+        for tri in tris:
+            v1, v2, v3, normal = tri
+            data = struct.pack('<12fH', *normal, *v1, *v2, *v3, 0)
+            f.write(data)
