@@ -21,8 +21,8 @@ def names_array_from_objects(objects):
 
 class ConfigLoader:
     def __init__(self, text_block_id = None):
-        self.config_dict = None
-        self.overrides_dict = None
+        self.config_dict = {}
+        self.overrides_dict = {}
         self.original_file_path = None
         
         self.temp_dir = tempfile.gettempdir()
@@ -71,7 +71,6 @@ class ConfigLoader:
 
         return True
 
-
     def write_ini_file(self, config_local_path, use_overrides = True):
         config = self.config_with_overrides if use_overrides else self.config_dict
         with open(config_local_path, 'w') as file:
@@ -115,11 +114,38 @@ class ConfigLoader:
                 json_content = text_block.as_string()
                 self.config_dict = json.loads(json_content)
 
-def load_list_to_dict(list):
-    param_dict = {}
-    for item in list:
-        param_dict[item.param_id] = item.param_value
-    return param_dict
+    def load_list_to_overrides(self, list):
+        for item in list:
+            self.overrides_dict[item.param_id] = item.param_value
+    
+    def add_pauses_and_changes(self, list):
+        colors = [
+            "#79C543", "#E01A4F", "#FFB000", "#8BC34A", "#808080",
+            "#ED1C24", "#A349A4", "#B5E61D", "#26A69A", "#BE1E2D",
+            "#39B54A", "#CCCCCC", "#5A4CA2", "#D90F5A", "#A4E100",
+            "#B97A57", "#3F48CC", "#F9E300", "#FFFFFF", "#00A2E8"
+        ]
+        combined_layer_gcode = self.config_dict['layer_gcode']
+        pause_gcode = "\\n;PAUSE_PRINT\\n" + (self.config_dict.get('pause_print_gcode') or 'M0')
+    
+        for item in list:
+            try:
+                layer_num = int(item.param_value) - 1
+            except:
+                continue
+
+            if item.param_type == 'pause':
+                item_gcode = pause_gcode
+            elif item.param_type == 'color_change':
+                color_change_gcode = f"\\n;COLOR_CHANGE,T0,{colors[0]}\\n" + (self.config_dict.get('color_change_gcode') or 'M600')
+                item_gcode = color_change_gcode
+                colors.append(colors.pop(0))
+            else:
+                continue
+        
+            combined_layer_gcode += f"{{if layer_num=={layer_num}}}{item_gcode}{{endif}}"
+
+        self.overrides_dict['layer_gcode'] = combined_layer_gcode 
 
 def calculate_md5(file_path):
     md5_hash = hashlib.md5()

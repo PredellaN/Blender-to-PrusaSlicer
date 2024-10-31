@@ -9,6 +9,7 @@ import cProfile
 import pstats
 import io
 
+from .. import PG_NAME_LC
 
 class BasePanel(bpy.types.Panel):
     bl_label = "Default Panel"
@@ -30,6 +31,19 @@ class BasePanel(bpy.types.Panel):
                     row.label(text=text, icon=icon)
 
     def draw(self, context):
+        pass
+
+class BaseList(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        row = layout.row()
+
+        delete_op = row.operator(f"{PG_NAME_LC}.remove_param", text="", icon='X')
+        delete_op.item_index = index
+        delete_op.target = self.list_id
+
+        self.draw_properties(row, item)
+    
+    def draw_properties(self, row, item):
         pass
 
 def is_usb_device(partition):

@@ -18,25 +18,27 @@ temp_files = []
 class ParamAddOperator(bpy.types.Operator):
     bl_idname = f"{PG_NAME_LC}.add_param"
     bl_label = "Add Parameter"
+    target: bpy.props.StringProperty() # type: ignore
 
     def execute(self, context):
         cx = bf.coll_from_selection()
         prop_group = getattr(cx, PG_NAME_LC)
 
-        control_list = getattr(prop_group, f'list')
+        control_list = getattr(prop_group, f'{self.target}')
         control_list.add()
         return {'FINISHED'}
 
 class ParamRemoveOperator(bpy.types.Operator):
     bl_idname = f"{PG_NAME_LC}.remove_param"
     bl_label = "Remove Parameter"
+    target: bpy.props.StringProperty() # type: ignore
     item_index: bpy.props.IntProperty() # type: ignore
 
     def execute(self, context):
         cx = bf.coll_from_selection()
         prop_group = getattr(cx, PG_NAME_LC)
 
-        control_list = getattr(prop_group, f'list')
+        control_list = getattr(prop_group, f'{self.target}')
         control_list.remove(self.item_index)
         return {'FINISHED'}
 
@@ -98,7 +100,8 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
                 loader.load_config_from_path(pg.print_config_file, append=True)
             else:
                 loader.load_config_from_path(pg.config, append=False)
-            loader.overrides_dict = bf.load_list_to_dict(pg.list)
+            loader.load_list_to_overrides(pg.list)
+            loader.add_pauses_and_changes(pg.pause_list)
         except:
             show_progress(ws, getattr(cx, PG_NAME_LC), 0, f'Error: failed to load configuration')
 

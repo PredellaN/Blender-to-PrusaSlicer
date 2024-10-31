@@ -1,16 +1,17 @@
 import bpy # type: ignore
-from .functions.basic_functions import BasePanel, is_usb_device
+from .functions.basic_functions import BasePanel, BaseList, is_usb_device
 from .functions import blender_funcs as bf
 from . import PG_NAME_LC, dependencies_installed, blender_globals
 
-class PRUSASLICER_UL_IdValue(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        row = layout.row()
-
-        delete_op = row.operator(f"{PG_NAME_LC}.remove_param", text="", icon='X')
-        delete_op.item_index = index
-
+class PRUSASLICER_UL_IdValue(BaseList):
+    def draw_properties(self, row, item):
         row.prop(item, "param_id")
+        row.prop(item, "param_value")
+
+class PRUSASLICER_UL_PauseValue(BaseList):
+    def draw_properties(self, row, item):
+        row.prop(item, "param_type")
+        row.label(text="on layer")
         row.prop(item, "param_value")
 
 class PrusaSlicerPanel(BasePanel):
@@ -102,9 +103,10 @@ class PrusaSlicerPanel(BasePanel):
                     row.label(text=f"{mountpoint.split('/')[-1]} mounted at {mountpoint} ({partition.device})")
 
 class SlicerPanel_0_Overrides(BasePanel):
-    bl_label = "Overrides"
+    bl_label = "Configuration Overrides"
     bl_idname = f"SCENE_PT_{PG_NAME_LC}_Overrides"
     bl_parent_id = f"SCENE_PT_{PG_NAME_LC}"
+    list_id = f"list"
 
     def draw(self, context):
         cx = bf.coll_from_selection()
@@ -112,15 +114,31 @@ class SlicerPanel_0_Overrides(BasePanel):
 
         layout = self.layout
 
-        ### Config Overrides
-
         row = layout.row()
-        row.label(text="Configuration Overrides")
-
-        row = layout.row()
-        row.template_list(f"PRUSASLICER_UL_IdValue", "Params",
-                pg, f"list",
-                pg, f"list_index"
+        
+        row.template_list(f"PRUSASLICER_UL_IdValue", f"{self.list_id}",
+                pg, f"{self.list_id}",
+                pg, f"{self.list_id}_index"
                 )
         row = layout.row()
-        row.operator(f"{PG_NAME_LC}.add_param")
+        row.operator(f"{PG_NAME_LC}.add_param").target=f"{self.list_id}"
+
+class SlicerPanel_1_Pauses(BasePanel):
+    bl_label = "Pauses and Color Changes"
+    bl_idname = f"SCENE_PT_{PG_NAME_LC}_Pauses"
+    bl_parent_id = f"SCENE_PT_{PG_NAME_LC}"
+    list_id = f"pause_list"
+
+    def draw(self, context):
+        cx = bf.coll_from_selection()
+        pg = getattr(cx, PG_NAME_LC)
+
+        layout = self.layout
+
+        row = layout.row()
+        row.template_list(f"PRUSASLICER_UL_PauseValue", f"{self.list_id}",
+                pg, f"{self.list_id}",
+                pg, f"{self.list_id}_index"
+                )
+        row = layout.row()
+        row.operator(f"{PG_NAME_LC}.add_param").target=f"{self.list_id}"

@@ -5,6 +5,13 @@ class ParamsListItem(bpy.types.PropertyGroup):
     param_id: bpy.props.StringProperty(name='') # type: ignore
     param_value: bpy.props.StringProperty(name='') # type: ignore
 
+class PauseListItem(bpy.types.PropertyGroup):
+    param_type: bpy.props.EnumProperty(name='', items=[
+        ('pause', "Pause", "Pause action"),
+        ('color_change', "Color Change", "Trigger color change"),
+    ]) # type: ignore
+    param_value: bpy.props.StringProperty(name='') # type: ignore
+
 def sorted_enums(filter):
     if 'print_profiles' in blender_globals:
         profiles = blender_globals['print_profiles']
@@ -63,6 +70,9 @@ class PrusaSlicerPropertyGroup(bpy.types.PropertyGroup):
 
     list : bpy.props.CollectionProperty(type=ParamsListItem) # type: ignore
     list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: setattr(self, 'list_index', -1)) # Auto-deselect # type: ignore
+
+    pause_list : bpy.props.CollectionProperty(type=PauseListItem) # type: ignore
+    pause_list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: setattr(self, 'pause_list_index', -1)) # Auto-deselect # type: ignore
 
     print_weight : bpy.props.StringProperty(name="") # type: ignore
     print_time : bpy.props.StringProperty(name="") # type: ignore

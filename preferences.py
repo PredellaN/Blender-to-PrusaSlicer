@@ -3,7 +3,7 @@ import subprocess
 from .functions import modules as mod
 from .functions import ui_functions as uf
 from . import PG_NAME_LC, DEPENDENCIES, DEPENDENCIES_FOLDER
-from . import register, unregister, dependencies_installed, blender_globals  # Import the unregister and register functions
+from . import register, unregister, dependencies_installed  # Import the unregister and register functions
 
 class EXAMPLE_OT_install_dependencies(bpy.types.Operator):
     bl_idname = f"{PG_NAME_LC}.install_dependencies"
