@@ -1,4 +1,5 @@
 import bpy # type: ignore
+import numpy as np
 
 import os, subprocess, time, tempfile, threading, json
 from collections import namedtuple
@@ -76,6 +77,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         ws = context.workspace
         cx = bf.coll_from_selection()
         pg = getattr(cx, PG_NAME_LC)
+        global blender_globals
 
         preferences = bpy.context.preferences.addons[__package__].preferences
         global prusaslicer_path
@@ -85,7 +87,25 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
         pg.running = 1
 
-        show_progress(ws, pg, 0, "Exporting STL...")
+        show_progress(ws, pg, 0, "Preparing Configuration...")
+
+        loader = bf.ConfigLoader()
+
+        try:
+            if pg.use_single_config == False or blender_globals["uses_manifest"]:
+                loader.load_config_from_path(pg.printer_config_file, append=False)
+                loader.load_config_from_path(pg.filament_config_file, append=True)
+                loader.load_config_from_path(pg.print_config_file, append=True)
+            else:
+                loader.load_config_from_path(pg.config, append=False)
+            loader.overrides_dict = bf.load_list_to_dict(pg.list)
+        except:
+            show_progress(ws, getattr(cx, PG_NAME_LC), 0, f'Error: failed to load configuration')
+
+            getattr(cx, PG_NAME_LC).running = 0
+            return {'FINISHED'}
+
+        show_progress(ws, pg, 10, "Exporting STL...")
 
         obj_names = bf.names_array_from_objects(context.selected_objects)
 
@@ -104,29 +124,27 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         global temp_files
         temp_files = []
 
-        unit_scale = context.scene.unit_settings.scale_length
-        bpy.ops.wm.stl_export(filepath=paths.stl_path, global_scale=1000*unit_scale, export_selected_objects=True)
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        selected_objects = [obj.evaluated_get(depsgraph) for obj in bpy.context.selected_objects if obj.type == 'MESH']
+
+        scale = 1000
+        tris = bf.objects_to_tris(selected_objects, scale)
+
+        vertices = tris[:, :3, :]
+        min_coords = vertices.min(axis=(0, 1))
+        max_coords = vertices.max(axis=(0, 1))
+        bed_size = gf.get_bed_size(loader.config_with_overrides['bed_shape']) if 'bed_shape' in loader.config_with_overrides else (0, 0)
+        transform = -((min_coords + max_coords) / 2) + np.array([bed_size[0]/2,bed_size[1]/2,0])
+        tris = bf.transform_tris(tris, transform)
+
+        bf.save_stl(tris, paths.stl_path)
         temp_files.append(paths.stl_path)
-
-        show_progress(ws, pg, 10, "Preparing Configuration...")
-
-        loader = bf.ConfigLoader()
-        try:
-            if pg.use_single_config == False:
-                loader.load_config_from_path(pg.printer_config_file, append=False)
-                loader.load_config_from_path(pg.filament_config_file, append=True)
-                loader.load_config_from_path(pg.print_config_file, append=True)
-            else:
-                loader.load_config_from_path(pg.config, append=False)
-        except:
-            show_progress(ws, getattr(cx, PG_NAME_LC), 0, f'Error: failed to load configuration')
-
-            getattr(cx, PG_NAME_LC).running = 0
-            return {'FINISHED'}
 
         if not loader.config_dict:
             show_progress(ws, pg, 100, 'Opening PrusaSlicer')
-            command = [os.path.join(paths.stl_path)]
+            command = [
+                os.path.join(paths.stl_path),
+            ]
 
             thread = threading.Thread(target=run_slice, args=[command, cx, ws, None, None])
             thread.start()
@@ -134,8 +152,6 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
             getattr(cx, PG_NAME_LC).running = 0
             return {'FINISHED'}
 
-        loader.overrides_dict = bf.load_list_to_dict(pg.list)
-        
         filament = loader.config_with_overrides['filament_type']
         printer = loader.config_with_overrides['printer_model']
 
