@@ -13,3 +13,21 @@ def parse_gcode(file_path, name):
             except UnicodeDecodeError:
                 continue
     return None
+
+def get_bed_size(bed_shape: str) -> tuple:
+    try:
+        # Split the string by commas to get each coordinate
+        coordinates = bed_shape.split(',')
+        
+        # Extract x and y values as integers from each coordinate
+        x_values = [int(coord.split('x')[0]) for coord in coordinates]
+        y_values = [int(coord.split('x')[1]) for coord in coordinates]
+        
+        # Bed size is defined by the max x and y values
+        bed_width = max(x_values)
+        bed_height = max(y_values)
+        
+        return bed_width, bed_height
+    
+    except:
+        return 0, 0
