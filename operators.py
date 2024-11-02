@@ -12,7 +12,6 @@ from .functions import blender_funcs as bf
 from .functions import gcode_funcs as gf
 from . import PG_NAME_LC, blender_globals
 
-temp_dir = tempfile.gettempdir()
 temp_files = []
 
 class ParamAddOperator(bpy.types.Operator):
@@ -85,8 +84,6 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         global prusaslicer_path
         prusaslicer_path = preferences.prusaslicer_path
 
-        blendfile_directory = os.path.dirname(bpy.data.filepath)
-
         pg.running = 1
 
         show_progress(ws, pg, 0, "Preparing Configuration...")
@@ -117,12 +114,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
             getattr(cx, PG_NAME_LC).running = 0
             return{'FINISHED'}
 
-        base_filename = "-".join(obj_names)
-
-        paths = namedtuple('Paths', ['ini_path', 'stl_path', 'stl_temp_path', 'gcode_path', 'gcode_temp_path', 'json_temp_path'], defaults=[""]*5)
-
-        stl_file_name = base_filename + ".stl"
-        paths.stl_path = os.path.join(temp_dir, stl_file_name)
+        paths = determine_paths(loader.config_with_overrides, "-".join(obj_names), self.mountpoint)
 
         global temp_files
         temp_files = []
@@ -130,8 +122,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         depsgraph = bpy.context.evaluated_depsgraph_get()
         selected_objects = [obj.evaluated_get(depsgraph) for obj in bpy.context.selected_objects if obj.type == 'MESH']
 
-        scale = 1000
-        tris = bf.objects_to_tris(selected_objects, scale)
+        tris = bf.objects_to_tris(selected_objects, 1000)
 
         vertices = tris[:, :3, :]
         min_coords = vertices.min(axis=(0, 1))
@@ -155,27 +146,6 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
             getattr(cx, PG_NAME_LC).running = 0
             return {'FINISHED'}
 
-        filament = loader.config_with_overrides['filament_type']
-        printer = loader.config_with_overrides['printer_model']
-
-        extension = "bgcode" if loader.config_with_overrides['binary_gcode'] == '1' else "gcode"
-        filename = f"{base_filename}-{filament}-{printer}"
-        gcode_filename = f"{filename}.{extension}"
-        json_filename = f"{filename}.json"
-
-        append_done = ""
-        if self.mountpoint:
-            gcode_dir = self.mountpoint
-            append_done = f" to {gcode_dir.split('/')[-1]}"
-        elif blendfile_directory:
-            gcode_dir = blendfile_directory
-        else:
-            gcode_dir = temp_dir
-        paths.gcode_path = os.path.join(gcode_dir, gcode_filename)
-        paths.gcode_temp_path = os.path.join(temp_dir, gcode_filename)
-        paths.json_temp_path = os.path.join(temp_dir, json_filename)
-
-        paths.ini_path = os.path.join(temp_dir, 'config.ini')
         temp_files.append(loader.write_ini_file(paths.ini_path))
 
         if self.mode == "open":
@@ -202,6 +172,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
                 if self.mode == "slice_and_preview":
                     thread = threading.Thread(target=show_preview, args=[paths.gcode_temp_path])
                     thread.start()
+                append_done = f" to {self.mountpoint.split('/')[-1]}" if self.mountpoint else ""
                 show_progress(ws, getattr(cx, PG_NAME_LC), 100, f'Done (copied from cached gcode){append_done}')
                 display_stats(cx, paths.gcode_temp_path)
 
@@ -221,6 +192,36 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
             thread.start()
 
             return {'FINISHED'}
+
+def determine_paths(config, base_filename, mountpoint):
+    paths = namedtuple('Paths', ['ini_path', 'stl_path', 'stl_temp_path', 'gcode_path', 'gcode_temp_path', 'json_temp_path'], defaults=[""]*5)
+
+    filament = config['filament_type']
+    printer = config['printer_model']
+
+    stl_file_name = base_filename + ".stl"
+    extension = "bgcode" if config['binary_gcode'] == '1' else "gcode"
+    full_filename = f"{base_filename}-{filament}-{printer}"
+    gcode_filename = f"{full_filename}.{extension}"
+    json_filename = f"{full_filename}.json"
+
+    temp_dir = tempfile.gettempdir()
+
+    blendfile_directory = os.path.dirname(bpy.data.filepath)
+    paths.stl_path = os.path.join(temp_dir, stl_file_name)
+
+    if mountpoint:
+        gcode_dir = mountpoint
+    elif blendfile_directory:
+        gcode_dir = blendfile_directory
+    else:
+        gcode_dir = temp_dir
+
+    paths.gcode_path = os.path.join(gcode_dir, gcode_filename)
+    paths.gcode_temp_path = os.path.join(temp_dir, gcode_filename)
+    paths.json_temp_path = os.path.join(temp_dir, json_filename)
+    paths.ini_path = os.path.join(temp_dir, 'config.ini')
+    return paths
 
 def run_slice(command, cx, ws, paths, callback = None):
     
