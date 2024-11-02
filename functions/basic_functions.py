@@ -4,6 +4,8 @@ import time
 import shutil
 import threading
 import platform
+import csv
+import os
 
 import cProfile
 import pstats
@@ -33,6 +35,14 @@ class BasePanel(bpy.types.Panel):
     def draw(self, context):
         pass
 
+class SearchList(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        row = layout.row()
+        self.draw_properties(row, item)
+    
+    def draw_properties(self, row, item):
+        pass
+
 class BaseList(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         row = layout.row()
@@ -45,6 +55,25 @@ class BaseList(bpy.types.UIList):
     
     def draw_properties(self, row, item):
         pass
+
+def parse_csv_to_tuples(filename):
+    if not hasattr(parse_csv_to_tuples, 'cache'):
+        parse_csv_to_tuples.cache = {}
+
+    current_mtime = os.path.getmtime(filename)
+
+    if filename in parse_csv_to_tuples.cache:
+        cached_mtime, cached_data = parse_csv_to_tuples.cache[filename]
+        if current_mtime == cached_mtime:
+            return cached_data
+
+    with open(filename, 'r', newline='') as f:
+        reader = csv.reader(f)
+        data = [tuple(row) for row in reader]
+
+    parse_csv_to_tuples.cache[filename] = (current_mtime, data)
+
+    return sorted(data, key=lambda x: x[1])
 
 def is_usb_device(partition):
     if platform.system() == "Windows":

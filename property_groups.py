@@ -1,5 +1,11 @@
 import bpy
 from . import blender_globals
+from .functions.basic_functions import parse_csv_to_tuples
+
+class ParamSearchListItem(bpy.types.PropertyGroup):
+    param_id: bpy.props.StringProperty(name='') # type: ignore
+    param_name: bpy.props.StringProperty(name='') # type: ignore
+    param_description: bpy.props.StringProperty(name='') # type: ignore
 
 class ParamsListItem(bpy.types.PropertyGroup):
     param_id: bpy.props.StringProperty(name='') # type: ignore
@@ -18,6 +24,18 @@ def sorted_enums(filter):
         enums = [(item['absolute_path'], item['label'], item['absolute_path']) for item in profiles if item['type'] == filter] + [("", "", "")]
         return sorted(enums, key=lambda x: x[1])
     return [("","","")]
+
+def reset_selection(object, field):
+    if getattr(object, field) > -1:
+        setattr(object, field, -1)
+
+def selection_to_list(object, search_term, search_list, search_index, search_field, target_list, target_list_field):
+    if getattr(object, search_index) > -1:
+        selection = getattr(object,search_list)[getattr(object, search_index)]
+        new_item = getattr(object, target_list).add()
+        setattr(new_item, search_field, getattr(selection, target_list_field))
+        reset_selection(object, search_index)
+        setattr(object, search_term, "")
 
 class PrusaSlicerPropertyGroup(bpy.types.PropertyGroup):
     running: bpy.props.BoolProperty(name="is running", default=0) # type: ignore
@@ -68,11 +86,32 @@ class PrusaSlicerPropertyGroup(bpy.types.PropertyGroup):
         update=lambda self, context: setattr(self, 'print_config_file', self.print_config_file_enum),
     ) # type: ignore
 
+    def search_param_list(self, context):
+        if not self.search_term:
+            return
+        
+        self.search_list.clear()
+        self.search_list_index = -1
+
+        search_db = parse_csv_to_tuples('functions/prusaslicer_fields.csv')
+        filtered_tuples = [tup for tup in search_db if all(word in (tup[1] + ' ' + tup[2]).lower() for word in self.search_term.lower().split())]
+        sorted_tuples = sorted(filtered_tuples, key=lambda tup: tup[0])
+
+        for param_id, param_name, param_description in sorted_tuples:
+            new_item = self.search_list.add()
+            new_item.param_id = param_id
+            new_item.param_name = param_name
+            new_item.param_description = param_description
+
+    search_term : bpy.props.StringProperty(name="Search", update=search_param_list) # type: ignore
+    search_list : bpy.props.CollectionProperty(type=ParamSearchListItem) # type: ignore
+    search_list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: selection_to_list(self, 'search_term', 'search_list', 'search_list_index', 'param_id', 'list', 'param_id')) # type: ignore
+
     list : bpy.props.CollectionProperty(type=ParamsListItem) # type: ignore
-    list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: setattr(self, 'list_index', -1)) # Auto-deselect # type: ignore
+    list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'list_index')) # type: ignore
 
     pause_list : bpy.props.CollectionProperty(type=PauseListItem) # type: ignore
-    pause_list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: setattr(self, 'pause_list_index', -1)) # Auto-deselect # type: ignore
+    pause_list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'pause_list_index')) # type: ignore
 
     print_weight : bpy.props.StringProperty(name="") # type: ignore
     print_time : bpy.props.StringProperty(name="") # type: ignore

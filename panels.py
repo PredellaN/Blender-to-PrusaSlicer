@@ -1,7 +1,11 @@
 import bpy # type: ignore
-from .functions.basic_functions import BasePanel, BaseList, is_usb_device
+from .functions.basic_functions import BasePanel, BaseList, SearchList, is_usb_device
 from .functions import blender_funcs as bf
 from . import PG_NAME_LC, dependencies_installed, blender_globals
+
+class PRUSASLICER_UL_SearchParamValue(SearchList):
+    def draw_properties(self, row, item):
+        row.label(text=item.param_name + " - " + item.param_description)
 
 class PRUSASLICER_UL_IdValue(BaseList):
     def draw_properties(self, row, item):
@@ -106,6 +110,7 @@ class SlicerPanel_0_Overrides(BasePanel):
     bl_label = "Configuration Overrides"
     bl_idname = f"SCENE_PT_{PG_NAME_LC}_Overrides"
     bl_parent_id = f"SCENE_PT_{PG_NAME_LC}"
+    search_list_id = f"search_list"
     list_id = f"list"
 
     def draw(self, context):
@@ -115,11 +120,21 @@ class SlicerPanel_0_Overrides(BasePanel):
         layout = self.layout
 
         row = layout.row()
+        row.prop(pg, "search_term")
+
+        if pg.search_term:
+            row = layout.row()
+            row.template_list(f"PRUSASLICER_UL_SearchParamValue", f"{self.search_list_id}",
+                    pg, f"{self.search_list_id}",
+                    pg, f"{self.search_list_id}_index"
+                    )
         
+        row = layout.row()
         row.template_list(f"PRUSASLICER_UL_IdValue", f"{self.list_id}",
                 pg, f"{self.list_id}",
                 pg, f"{self.list_id}_index"
                 )
+        
         row = layout.row()
         row.operator(f"{PG_NAME_LC}.add_param").target=f"{self.list_id}"
 
@@ -140,5 +155,6 @@ class SlicerPanel_1_Pauses(BasePanel):
                 pg, f"{self.list_id}",
                 pg, f"{self.list_id}_index"
                 )
+        
         row = layout.row()
         row.operator(f"{PG_NAME_LC}.add_param").target=f"{self.list_id}"
