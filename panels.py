@@ -5,7 +5,7 @@ from . import PG_NAME_LC, dependencies_installed, blender_globals
 
 class PRUSASLICER_UL_SearchParamValue(SearchList):
     def draw_properties(self, row, item):
-        row.label(text=item.param_name + " - " + item.param_description)
+        row.label(text=item.param_id + " - " + item.param_description)
 
 class PRUSASLICER_UL_IdValue(BaseList):
     def draw_properties(self, row, item):
@@ -122,17 +122,12 @@ class SlicerPanel_0_Overrides(BasePanel):
         row = layout.row()
         row.prop(pg, "search_term")
 
-        if pg.search_term:
-            row = layout.row()
-            row.template_list(f"PRUSASLICER_UL_SearchParamValue", f"{self.search_list_id}",
-                    pg, f"{self.search_list_id}",
-                    pg, f"{self.search_list_id}_index"
-                    )
-        
         row = layout.row()
-        row.template_list(f"PRUSASLICER_UL_IdValue", f"{self.list_id}",
-                pg, f"{self.list_id}",
-                pg, f"{self.list_id}_index"
+        active_list = "PRUSASLICER_UL_SearchParamValue" if pg.search_term else "PRUSASLICER_UL_IdValue"
+        active_list_id = self.search_list_id if pg.search_term else self.list_id
+        row.template_list(active_list, f"{active_list_id}",
+                pg, f"{active_list_id}",
+                pg, f"{active_list_id}_index"
                 )
         
         row = layout.row()
