@@ -34,14 +34,14 @@ class PrusaSlicerPreferences(bpy.types.AddonPreferences):
         name="PrusaSlicer Path",
         description="Path to the PrusaSlicer executable",
         subtype='FILE_PATH',
-        default="switcherooctl -g 1 flatpak run com.prusa3d.PrusaSlicer"
+        default="flatpak run com.prusa3d.PrusaSlicer"
     ) #type: ignore
 
     manifest_path: bpy.props.StringProperty(
         name="Manifest Path",
         description="Path to a configuration manifest (optional)",
         subtype='FILE_PATH',
-        default="https://raw.githubusercontent.com/PredellaN/MOS-3d-Printing-Library/refs/heads/main/manifest.json",
+        default="",
         update=lambda self, context: uf.update_manifest(self),
     ) #type: ignore
 
