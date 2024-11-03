@@ -15,6 +15,12 @@ class PauseListItem(bpy.types.PropertyGroup):
     param_type: bpy.props.EnumProperty(name='', items=[
         ('pause', "Pause", "Pause action"),
         ('color_change', "Color Change", "Trigger color change"),
+        ('custom_gcode', "Custom Gcode", "Add a custom Gcode command"),
+    ]) # type: ignore
+    param_cmd: bpy.props.StringProperty(name='') # type: ignore
+    param_value_type: bpy.props.EnumProperty(name='', items=[
+        ('layer', "on layer", "on layer"),
+        ('height', "at height", "at height"),
     ]) # type: ignore
     param_value: bpy.props.StringProperty(name='') # type: ignore
 

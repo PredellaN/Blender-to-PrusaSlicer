@@ -14,9 +14,26 @@ class PRUSASLICER_UL_IdValue(BaseList):
 
 class PRUSASLICER_UL_PauseValue(BaseList):
     def draw_properties(self, row, item):
-        row.prop(item, "param_type")
-        row.label(text="on layer")
-        row.prop(item, "param_value")
+        
+        
+        sub_row = row.row(align=True)
+        sub_row.prop(item, "param_type")
+        sub_row.scale_x = 0.1
+        if item.param_type == "custom_gcode":
+            row.prop(item, "param_cmd")
+        else:
+            label = "Pause" if item.param_type == "pause" else None
+            label = "Color Change" if item.param_type == "color_change" else label
+            row.label(text=label)
+
+        # row.label(text="on layer")
+        sub_row = row.row(align=True)
+        sub_row.scale_x = 0.8  # Adjust this scale value as needed
+        sub_row.prop(item, 'param_value_type')
+
+        sub_row = row.row(align=True)
+        sub_row.scale_x = 0.5  # Adjust this scale value as needed
+        sub_row.prop(item, "param_value", text="")
 
 class PrusaSlicerPanel(BasePanel):
     bl_label = "Blender to PrusaSlicer"

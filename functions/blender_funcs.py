@@ -7,6 +7,7 @@ import re
 import hashlib
 import numpy as np
 import struct
+import math
 
 from collections import Counter
 
@@ -130,7 +131,10 @@ class ConfigLoader:
     
         for item in list:
             try:
-                layer_num = int(item.param_value) - 1
+                if item.param_value_type == "layer":
+                    layer_num = int(item.param_value) - 1
+                else:
+                    layer_num = int(math.ceil(float(item.param_value) / float(self.config_dict['layer_height'])) - 1)
             except:
                 continue
 
@@ -140,6 +144,9 @@ class ConfigLoader:
                 color_change_gcode = f"\\n;COLOR_CHANGE,T0,{colors[0]}\\n" + (self.config_dict.get('color_change_gcode') or 'M600')
                 item_gcode = color_change_gcode
                 colors.append(colors.pop(0))
+            elif item.param_type == 'custom_gcode' and item.param_cmd:
+                custom_gcode = f"\\n;CUSTOM GCODE\\n{item.param_cmd}"
+                item_gcode = custom_gcode
             else:
                 continue
         
