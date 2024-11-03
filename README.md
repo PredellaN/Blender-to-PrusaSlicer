@@ -11,17 +11,21 @@ Slice models and open them in PrusaSlicer directly from Blender.
 - Loading configurations from a .json manifest file, which you can point to in the addon preferences, to simplify the selection of profiles. As example, you can use "https://raw.githubusercontent.com/PredellaN/MOS-3d-Printing-Library/refs/heads/main/manifest.json".
 - Collection-based slicing: the settings are stored at a collection level: when selecting different objects to slice, the active configuration will reflect the current selection. This is especially useful when creating files for different printers.
 - Slicing directly to USB devices.
+
 ![image](https://github.com/user-attachments/assets/a70932a4-0df0-46ef-81aa-1e9a0b64b0ee)
 
 - Customizing the slicing using overrides. The original configuration file itself will remain unchaged.
+
 ![image](https://github.com/user-attachments/assets/64d968d1-f4fa-4932-9027-eb2fb872ccac)
 
 - Adding pauses, color changes, and custom gcodes at specific layers or heights
+
 ![image](https://github.com/user-attachments/assets/e5cbe15f-3257-46dc-b57b-3b269e8c08a4)
 
 ## Installation
 - Clone or download this repository.
 - Open Blender and go to Edit > Preferences > Add-ons > arrow on the top-right corner > Install from Disk.
+
 ![image](https://github.com/user-attachments/assets/cc34cb88-59cb-40fb-91ea-fb14242db1f2)
 
 - Click Install and select the .zip file of the add-on.
