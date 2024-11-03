@@ -151,7 +151,7 @@ class SlicerPanel_0_Overrides(BasePanel):
         row.operator(f"{PG_NAME_LC}.add_param").target=f"{self.list_id}"
 
 class SlicerPanel_1_Pauses(BasePanel):
-    bl_label = "Pauses and Color Changes"
+    bl_label = "Pauses, Color Changes and Custom Gcode"
     bl_idname = f"SCENE_PT_{PG_NAME_LC}_Pauses"
     bl_parent_id = f"SCENE_PT_{PG_NAME_LC}"
     list_id = f"pause_list"
