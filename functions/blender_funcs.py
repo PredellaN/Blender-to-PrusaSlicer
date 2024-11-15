@@ -1,6 +1,4 @@
 import bpy  # type: ignore
-import os
-import urllib.request
 import json
 import tempfile
 import re
@@ -8,6 +6,9 @@ import hashlib
 import numpy as np
 import struct
 import math
+
+from .basic_functions import dict_from_json
+from .caching import CACHE_INDEX_PATH, update_cache_for_id
 
 from collections import Counter
 
@@ -19,6 +20,24 @@ def names_array_from_objects(objects):
     final_names = [f"{count}x_{name}" if count > 1 else name for name, count in name_counter.items()]
     final_names.sort()
     return final_names
+
+def generate_config(id):
+    cached_confs = dict_from_json(CACHE_INDEX_PATH)
+    dict = dict_from_json(cached_confs[id]['path'])
+    conf_current = dict[id]['profile']  # Copy to avoid modifying the original config
+    if conf_current.get('inherits', False):
+        curr_category = id.split(":")[0]
+        inherited_ids = [curr_category + ":" + inherit_id.strip() for inherit_id in conf_current['inherits'].split(';')]  # Split on semicolon for multiple inheritance
+        merged_conf = {}
+        for inherit_id in inherited_ids:
+            if inherit_id in dict:
+                inherited_conf = generate_config(inherit_id)  # Recursive call for each inherited config
+                merged_conf.update(inherited_conf)  # Merge each inherited config
+        merged_conf.update(conf_current)  # Update with current config values (overriding inherited)
+        conf_current = merged_conf
+    conf_current.pop('inherits', None)
+    conf_current.pop('compatible_printers_condition', None)
+    return conf_current
 
 class ConfigLoader:
     def __init__(self, text_block_id = None):
@@ -41,45 +60,28 @@ class ConfigLoader:
         if self.overrides_dict:
             config.update(self.overrides_dict)
         return config
-
-    def load_config_from_path(self, path, append = False):
-        if not path:
+    
+    def load_config(self, key, append = False):
+        if not key:
             return False
 
-        self.original_file_path = path
-        if path.startswith('http://') or path.startswith('https://'):
-            encoded_path = urllib.parse.quote(path, safe="%/:=&?")
-            request = urllib.request.Request(
-                encoded_path, 
-                headers={'Cache-Control': 'no-cache', 'Pragma': 'no-cache'}
-            )
-            response = urllib.request.urlopen(request)
-            file_content = response.read().decode('utf-8')
+        update_cache_for_id(key)
 
-            temp_path = os.path.join(self.temp_dir, 'config.ini')
-            with open(temp_path, 'w') as file:
-                file.write(file_content)
-            config_local_path = temp_path
-        else:
-            config_local_path = bpy.path.abspath(path)
-
-        self.load_ini_file(config_local_path, append=append)
-        self._write_text_block(TEXT_BLOCK_NAME)
-
-        if 'temp_path' in locals():
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
+        if not append:
+            self.config_dict = {}
+        config = generate_config(key)
+        self.config_dict.update(config)
 
         return True
 
-    def write_ini_file(self, config_local_path, use_overrides = True):
+    def write_ini(self, config_local_path, use_overrides = True):
         config = self.config_with_overrides if use_overrides else self.config_dict
         with open(config_local_path, 'w') as file:
             for key, value in config.items():
                 file.write(f"{key} = {value}\n")
         return config_local_path
 
-    def load_ini_file(self, config_local_path, append = False):
+    def load_ini(self, config_local_path, append = False):
         if not append:
             self.config_dict = {}
         with open(config_local_path, 'r') as file:
@@ -163,17 +165,9 @@ def calculate_md5(file_path):
     return md5_hash.hexdigest()
 
 def coll_from_selection():
-    cx = None
     for obj in bpy.context.selected_objects:
-        for coll in bpy.data.collections:
-            if obj in [o for o in coll.objects]:
-                cx = coll
-                break
-        if cx:
-            break
-    if not cx:
-        cx = bpy.context.scene.collection
-    return cx
+        return obj.users_collection[0]
+    return bpy.context.scene.collection
 
 def objects_to_tris(selected_objects, scale):
     tris_count = sum(len(obj.data.loop_triangles) for obj in selected_objects)

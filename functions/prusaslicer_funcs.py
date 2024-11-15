@@ -1,6 +1,10 @@
 
-import os, tempfile
+import os
+import tempfile
 import subprocess
+
+from .basic_functions import load_manifest
+from .caching import update_cache
 
 temp_dir = tempfile.gettempdir()
 
@@ -43,3 +47,27 @@ def err_to_tempfile(text):
     with open(temp_file_path, "w") as temp_file:
         temp_file.write(text)
     return temp_file_path
+
+def filter_prusaslicer_dict_by_section(dict, section):
+    return {k.split(":")[1]: v for k, v in dict.items() if k.split(":")[0] == section}
+
+def configs_to_cache(urls):
+    entries = []
+    for url in urls:
+        if url.endswith(".json"):
+            manifest = load_manifest(url)
+            entries.extend([{
+                'bundle_url' : url,
+                'url' : item['absolute_path'],
+                'header' : f"{item['type']}:{item['label']}",
+            } for item in manifest])
+        else:
+            entries.extend([{
+                'bundle_url' : url,
+                'url' : url,
+                'header' : "unknown:unknown",
+            }])
+
+    update_cache(entries)
+
+    return

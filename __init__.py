@@ -19,7 +19,7 @@ bl_info = {
     "author" : "Nicolas Predella",
     "description" : "PrusaSlicer integration into Blender",
     "blender" : (4, 2, 0),
-    "version" : (0, 0, 3),  
+    "version" : (0, 1, 0),  
     "location" : "",
     "warning" : "",
 }
@@ -40,10 +40,9 @@ def register():
     from . import preferences as pref
     mod.reload_modules([pref])
     registered_classes.extend(mod.register_classes(mod.get_classes([pref])))
-    preferences = bpy.context.preferences.addons[__package__].preferences
+    prefs = bpy.context.preferences.addons[__package__].preferences
 
-    from .functions import ui_functions as uf
-    uf.update_manifest(preferences)
+    prefs.add_default_bundles()
 
     from . import operators as op
     from . import panels as pn

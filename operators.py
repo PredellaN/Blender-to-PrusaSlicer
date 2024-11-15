@@ -7,39 +7,12 @@ from functools import partial
 
 from .functions import prusaslicer_funcs as psf 
 
-from .functions.basic_functions import show_progress, threaded_copy
+from .functions.basic_functions import show_progress, threaded_copy, dict_from_json
 from .functions import blender_funcs as bf
 from .functions import gcode_funcs as gf
-from . import PG_NAME_LC, blender_globals
+from . import PG_NAME_LC
 
 temp_files = []
-
-class ParamAddOperator(bpy.types.Operator):
-    bl_idname = f"{PG_NAME_LC}.add_param"
-    bl_label = "Add Parameter"
-    target: bpy.props.StringProperty() # type: ignore
-
-    def execute(self, context):
-        cx = bf.coll_from_selection()
-        prop_group = getattr(cx, PG_NAME_LC)
-
-        control_list = getattr(prop_group, f'{self.target}')
-        control_list.add()
-        return {'FINISHED'}
-
-class ParamRemoveOperator(bpy.types.Operator):
-    bl_idname = f"{PG_NAME_LC}.remove_param"
-    bl_label = "Remove Parameter"
-    target: bpy.props.StringProperty() # type: ignore
-    item_index: bpy.props.IntProperty() # type: ignore
-
-    def execute(self, context):
-        cx = bf.coll_from_selection()
-        prop_group = getattr(cx, PG_NAME_LC)
-
-        control_list = getattr(prop_group, f'{self.target}')
-        control_list.remove(self.item_index)
-        return {'FINISHED'}
 
 class UnmountUsbOperator(bpy.types.Operator):
     bl_idname = f"{PG_NAME_LC}.unmount_usb"
@@ -73,44 +46,46 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
     mode: bpy.props.StringProperty(name="", default="slice") # type: ignore
     mountpoint: bpy.props.StringProperty(name="", default="") # type: ignore
+
+    def progress_callback(self, context):
+        ws = context.workspace
+        cx = bf.coll_from_selection()
+        pg = getattr(cx, PG_NAME_LC)
+        show_progress(pg, 0, "Preparing Configuration...")
     
     def execute(self, context):
         ws = context.workspace
         cx = bf.coll_from_selection()
         pg = getattr(cx, PG_NAME_LC)
-        global blender_globals
 
-        preferences = bpy.context.preferences.addons[__package__].preferences
+        prefs = bpy.context.preferences.addons[__package__].preferences
         global prusaslicer_path
-        prusaslicer_path = preferences.prusaslicer_path
+        prusaslicer_path = prefs.prusaslicer_path
 
         pg.running = 1
 
-        show_progress(ws, pg, 0, "Preparing Configuration...")
+        show_progress(pg, 0, "Preparing Configuration...")
 
         loader = bf.ConfigLoader()
 
-        try:
-            if pg.use_single_config == False or blender_globals["uses_manifest"]:
-                loader.load_config_from_path(pg.printer_config_file, append=False)
-                loader.load_config_from_path(pg.filament_config_file, append=True)
-                loader.load_config_from_path(pg.print_config_file, append=True)
-            else:
-                loader.load_config_from_path(pg.config, append=False)
-            loader.load_list_to_overrides(pg.list)
-            loader.add_pauses_and_changes(pg.pause_list)
-        except:
-            show_progress(ws, getattr(cx, PG_NAME_LC), 0, f'Error: failed to load configuration')
+        # try:
+        loader.load_config(pg.printer_config_file, append=False)
+        loader.load_config(pg.filament_config_file, append=True)
+        loader.load_config(pg.print_config_file, append=True)
+        loader.load_list_to_overrides(pg.list)
+        loader.add_pauses_and_changes(pg.pause_list)
+        # except:
+        #     show_progress(pg, 0, f'Error: failed to load configuration')
 
-            getattr(cx, PG_NAME_LC).running = 0
-            return {'FINISHED'}
+        #     pg.running = 0
+        #     return {'FINISHED'}
 
-        show_progress(ws, pg, 10, "Exporting STL...")
+        show_progress(pg, 10, "Exporting STL...")
 
         obj_names = bf.names_array_from_objects(context.selected_objects)
 
         if not len(obj_names):
-            show_progress(ws, getattr(cx, PG_NAME_LC), 0, f'Error: selection empty')
+            show_progress(pg, 0, f'Error: selection empty')
             getattr(cx, PG_NAME_LC).running = 0
             return{'FINISHED'}
 
@@ -135,7 +110,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         temp_files.append(paths.stl_path)
 
         if not loader.config_dict:
-            show_progress(ws, pg, 100, 'Opening PrusaSlicer')
+            show_progress(pg, 100, 'Opening PrusaSlicer')
             command = [
                 os.path.join(paths.stl_path),
             ]
@@ -146,10 +121,10 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
             getattr(cx, PG_NAME_LC).running = 0
             return {'FINISHED'}
 
-        temp_files.append(loader.write_ini_file(paths.ini_path))
+        temp_files.append(loader.write_ini(paths.ini_path))
 
         if self.mode == "open":
-            show_progress(ws, pg, 100, 'Opening PrusaSlicer')
+            show_progress(pg, 100, 'Opening PrusaSlicer')
             command = [
                 "--load", paths.ini_path, 
                 os.path.join(paths.stl_path),
@@ -157,12 +132,11 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
             thread = threading.Thread(target=psf.exec_prusaslicer, args=[command, prusaslicer_path])
             thread.start()
 
-            getattr(cx, PG_NAME_LC).running = 0
+            pg.running = 0
             return {'FINISHED'}
 
         if os.path.exists(paths.gcode_temp_path) and os.path.exists(paths.json_temp_path):
-            with open(paths.json_temp_path, 'r') as file:
-                cached_data = json.load(file)
+            cached_data = dict_from_json(paths.json_temp_path)
             stl_chk = bf.calculate_md5(paths.stl_path)
             ini_chk = bf.calculate_md5(paths.ini_path)
 
@@ -173,14 +147,14 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
                     thread = threading.Thread(target=show_preview, args=[paths.gcode_temp_path])
                     thread.start()
                 append_done = f" to {self.mountpoint.split('/')[-1]}" if self.mountpoint else ""
-                show_progress(ws, getattr(cx, PG_NAME_LC), 100, f'Done (copied from cached gcode){append_done}')
+                show_progress(pg, 100, f'Done (copied from cached gcode){append_done}')
                 display_stats(cx, paths.gcode_temp_path)
 
                 getattr(cx, PG_NAME_LC).running = 0
                 return {'FINISHED'}
 
         if self.mode in ("slice", "slice_and_preview"):
-            show_progress(ws, pg, 30, 'Slicing with PrusaSlicer...')
+            show_progress(pg, 30, 'Slicing with PrusaSlicer...')
             command = [
                 "--load", paths.ini_path, 
                 "-g", os.path.join(paths.stl_path),
@@ -188,7 +162,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
             ]
 
             callback = partial(show_preview, paths.gcode_temp_path) if self.mode == "slice_and_preview" else None # if slicing to USB don't show a preview
-            thread = threading.Thread(target=run_slice, args=[command, cx, ws, paths, callback])
+            thread = threading.Thread(target=run_slice, args=[command, cx, ws, paths, [callback]])
             thread.start()
 
             return {'FINISHED'}
@@ -196,11 +170,11 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 def determine_paths(config, base_filename, mountpoint):
     paths = namedtuple('Paths', ['ini_path', 'stl_path', 'stl_temp_path', 'gcode_path', 'gcode_temp_path', 'json_temp_path'], defaults=[""]*5)
 
-    filament = config['filament_type']
-    printer = config['printer_model']
+    filament = config.get('filament_type', 'Unknown filament')
+    printer = config.get('printer_model', 'Unknown printer')
 
     stl_file_name = base_filename + ".stl"
-    extension = "bgcode" if config['binary_gcode'] == '1' else "gcode"
+    extension = "bgcode" if config.get('binary_gcode', '0') == '1' else "gcode"
     full_filename = f"{base_filename}-{filament}-{printer}"
     gcode_filename = f"{full_filename}.{extension}"
     json_filename = f"{full_filename}.json"
@@ -223,7 +197,9 @@ def determine_paths(config, base_filename, mountpoint):
     paths.ini_path = os.path.join(temp_dir, 'config.ini')
     return paths
 
-def run_slice(command, cx, ws, paths, callback = None):
+def run_slice(command, cx, ws, paths, callbacks = None):
+
+    pg = getattr(cx, PG_NAME_LC)
     
     getattr(cx, PG_NAME_LC).print_time = ""
     getattr(cx, PG_NAME_LC).print_weight = ""
@@ -233,7 +209,7 @@ def run_slice(command, cx, ws, paths, callback = None):
     
     if res:
         end_time = time.time()
-        show_progress(ws, getattr(cx, PG_NAME_LC), 0, f'Failed ({res})')
+        show_progress(pg, 0, f'Failed ({res})')
     else:
         
         if paths.gcode_temp_path:
@@ -248,12 +224,13 @@ def run_slice(command, cx, ws, paths, callback = None):
             threaded_copy(paths.gcode_temp_path, paths.gcode_path)
             
         end_time = time.time()
-        show_progress(ws, getattr(cx, PG_NAME_LC), 100, f'Done (in {(end_time - start_time):.2f}s)')
+        show_progress(pg, 100, f'Done (in {(end_time - start_time):.2f}s)')
             
-    getattr(cx, PG_NAME_LC).running = 0
+    pg.running = 0
 
-    if callback:
-        callback()
+    if callbacks:
+        for callback in callbacks:
+            callback()
 
     cleanup()
 
