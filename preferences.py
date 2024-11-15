@@ -125,7 +125,7 @@ class PrusaSlicerPreferences(bpy.types.AddonPreferences):
                     continue
                 new_item = self.prusaslicer_bundle_list.add()
                 new_item.conf_id = key
-                new_item.name = sorted_categories[config['category']] + " - " + config['id']
+                new_item.name = sorted_categories[config['category']] + "-" + config['id']
                 new_item.conf_label = config['id']
                 new_item.conf_cat = config['category']
                 new_item.conf_enabled = not config['has_header']
