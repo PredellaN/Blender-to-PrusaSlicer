@@ -8,11 +8,8 @@ import struct
 import math
 
 from .basic_functions import dict_from_json
-from .caching import CACHE_INDEX_PATH, update_cache_for_id
 
 from collections import Counter
-
-TEXT_BLOCK_NAME = "prusaslicer_configuration.json"
 
 def names_array_from_objects(objects):
     object_names = [re.sub(r'\.\d{0,3}$', '', obj.name) for obj in objects]
@@ -21,17 +18,15 @@ def names_array_from_objects(objects):
     final_names.sort()
     return final_names
 
-def generate_config(id):
-    cached_confs = dict_from_json(CACHE_INDEX_PATH)
-    dict = dict_from_json(cached_confs[id]['path'])
-    conf_current = dict[id]['profile']  # Copy to avoid modifying the original config
+def generate_config(id, profiles):
+    conf_current = profiles[id]['conf_dict']  # Copy to avoid modifying the original config
     if conf_current.get('inherits', False):
         curr_category = id.split(":")[0]
         inherited_ids = [curr_category + ":" + inherit_id.strip() for inherit_id in conf_current['inherits'].split(';')]  # Split on semicolon for multiple inheritance
         merged_conf = {}
         for inherit_id in inherited_ids:
-            if inherit_id in dict:
-                inherited_conf = generate_config(inherit_id)  # Recursive call for each inherited config
+            if inherit_id in profiles:
+                inherited_conf = generate_config(inherit_id, profiles)  # Recursive call for each inherited config
                 merged_conf.update(inherited_conf)  # Merge each inherited config
         merged_conf.update(conf_current)  # Update with current config values (overriding inherited)
         conf_current = merged_conf
@@ -40,15 +35,12 @@ def generate_config(id):
     return conf_current
 
 class ConfigLoader:
-    def __init__(self, text_block_id = None):
+    def __init__(self):
         self.config_dict = {}
         self.overrides_dict = {}
         self.original_file_path = None
         
         self.temp_dir = tempfile.gettempdir()
-
-        if text_block_id:
-            self._read_text_block(text_block_id)
 
     @property
     def config_with_overrides(self):
@@ -61,15 +53,13 @@ class ConfigLoader:
             config.update(self.overrides_dict)
         return config
     
-    def load_config(self, key, append = False):
+    def load_config(self, key, profiles, append = False):
         if not key:
             return False
 
-        update_cache_for_id(key)
-
         if not append:
             self.config_dict = {}
-        config = generate_config(key)
+        config = generate_config(key, profiles)
         self.config_dict.update(config)
 
         return True

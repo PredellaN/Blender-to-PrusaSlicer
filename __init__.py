@@ -41,8 +41,7 @@ def register():
     mod.reload_modules([pref])
     registered_classes.extend(mod.register_classes(mod.get_classes([pref])))
     prefs = bpy.context.preferences.addons[__package__].preferences
-
-    prefs.add_default_bundles()
+    prefs.update_config_bundle_manifest()
 
     from . import operators as op
     from . import panels as pn
