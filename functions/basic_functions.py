@@ -138,6 +138,13 @@ def show_progress(ref, progress, progress_text = ""):
                 area.tag_redraw()
     return None
 
+def redraw():
+    for workspace in bpy.data.workspaces:
+        for screen in workspace.screens:
+            for area in screen.areas:
+                area.tag_redraw()
+    return None
+
 def time_task(function, text = "", *args):
     start_time = time.perf_counter()
     res = function(*args)

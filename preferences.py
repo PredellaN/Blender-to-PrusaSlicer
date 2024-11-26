@@ -1,13 +1,13 @@
 import bpy, os
 import subprocess
 from .functions import modules as mod
-from .functions.basic_functions import ParamRemoveOperator, ParamAddOperator, reset_selection
+from .functions.basic_functions import ParamRemoveOperator, ParamAddOperator, reset_selection, dump_dict_to_json, dict_from_json, redraw
 from .functions.caching_local import LocalCache
 
-from . import PG_NAME_LC, DEPENDENCIES, DEPENDENCIES_FOLDER
+from . import PG_NAME_LC, DEPENDENCIES, DEPENDENCIES_FOLDER, ADDON_FOLDER
 from . import register, unregister, dependencies_installed  # Import the unregister and register functions
 
-class EXAMPLE_OT_install_dependencies(bpy.types.Operator):
+class install_dependencies(bpy.types.Operator):
     bl_idname = f"{PG_NAME_LC}.install_dependencies"
     bl_label = "Install dependencies"
     bl_description = ("Downloads and installs the required python packages for this add-on")
@@ -28,6 +28,30 @@ class EXAMPLE_OT_install_dependencies(bpy.types.Operator):
         unregister()
         register()
         return {"FINISHED"}
+    
+class ExportConfig(bpy.types.Operator):
+    bl_idname = f"{PG_NAME_LC}.export_configs"
+    bl_label = "Export Configurations List"
+
+    def execute(self, context):
+        prefs = bpy.context.preferences.addons[__package__].preferences
+        configs = [t[0] for t in prefs.get_filtered_bundle_items('') if t[0]]
+        path=os.path.join(ADDON_FOLDER, 'cache', 'exported_config.json')
+        dump_dict_to_json(configs, path)
+        return {'FINISHED'}
+    
+class ImportConfig(bpy.types.Operator):
+    bl_idname = f"{PG_NAME_LC}.import_configs"
+    bl_label = "Import Configurations List"
+
+    def execute(self, context):
+        prefs = bpy.context.preferences.addons[__package__].preferences
+        path=os.path.join(ADDON_FOLDER, 'cache', 'exported_config.json')
+        configs = dict_from_json(path)
+        for config in configs:
+            prefs.prusaslicer_bundle_list[config].conf_enabled=True
+        redraw()
+        return {'FINISHED'}
     
 # Configuration Lists
 class PRUSASLICER_UL_ConfListBase(bpy.types.UIList):
@@ -80,7 +104,7 @@ class PrusaSlicerPreferences(bpy.types.AddonPreferences):
             [
                 (item.conf_id, item.conf_label, "")
                 for item in self.prusaslicer_bundle_list
-                if item.conf_cat == cat and item.conf_enabled
+                if (item.conf_cat == cat or not cat) and item.conf_enabled
             ],
             key=lambda x: x[1]
         )
@@ -125,7 +149,7 @@ class PrusaSlicerPreferences(bpy.types.AddonPreferences):
                     continue
                 new_item = self.prusaslicer_bundle_list.add()
                 new_item.conf_id = key
-                new_item.name = sorted_categories[config['category']] + "-" + config['id']
+                new_item.name = key
                 new_item.conf_label = config['id']
                 new_item.conf_cat = config['category']
                 new_item.conf_enabled = not config['has_header']
@@ -168,6 +192,11 @@ class PrusaSlicerPreferences(bpy.types.AddonPreferences):
                 self, f"{active_list_id}",
                 self, f"{active_list_id}_index"
                 )
+        
+        layout = self.layout
+        row = layout.row()
+        row.operator(f"{PG_NAME_LC}.export_configs")
+        row.operator(f"{PG_NAME_LC}.import_configs")
 
         layout = self.layout
         if dependencies_installed:

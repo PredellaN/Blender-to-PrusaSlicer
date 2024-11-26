@@ -68,17 +68,17 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
         loader = bf.ConfigLoader()
 
-        # try:
-        loader.load_config(pg.printer_config_file, prefs.profile_cache.config_headers, append=False)
-        loader.load_config(pg.filament_config_file, prefs.profile_cache.config_headers, append=True)
-        loader.load_config(pg.print_config_file, prefs.profile_cache.config_headers, append=True)
-        loader.load_list_to_overrides(pg.list)
-        loader.add_pauses_and_changes(pg.pause_list)
-        # except:
-        #     show_progress(pg, 0, f'Error: failed to load configuration')
+        try:
+            loader.load_config(pg.printer_config_file, prefs.profile_cache.config_headers, append=False)
+            loader.load_config(pg.filament_config_file, prefs.profile_cache.config_headers, append=True)
+            loader.load_config(pg.print_config_file, prefs.profile_cache.config_headers, append=True)
+            loader.load_list_to_overrides(pg.list)
+            loader.add_pauses_and_changes(pg.pause_list)
+        except:
+            show_progress(pg, 0, f'Error: failed to load configuration')
 
-        #     pg.running = 0
-        #     return {'FINISHED'}
+            pg.running = 0
+            return {'FINISHED'}
 
         show_progress(pg, 10, "Exporting STL...")
 
