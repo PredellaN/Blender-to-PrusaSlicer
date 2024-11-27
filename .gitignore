@@ -1,4 +1,6 @@
 __pycache__
 .venv
+cache
 experimental
 deps
+profiles/Configs

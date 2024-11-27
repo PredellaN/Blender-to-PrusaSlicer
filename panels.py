@@ -1,21 +1,35 @@
 import bpy # type: ignore
-from .functions.basic_functions import BasePanel, BaseList, SearchList, is_usb_device
+from .functions.basic_functions import BasePanel, BaseList, SearchList, ParamAddOperator, ParamRemoveOperator, is_usb_device
 from .functions import blender_funcs as bf
-from . import PG_NAME_LC, dependencies_installed, blender_globals
+from . import PG_NAME_LC, dependencies_installed
 
 class PRUSASLICER_UL_SearchParamValue(SearchList):
     def draw_properties(self, row, item):
         row.label(text=item.param_id + " - " + item.param_description)
 
+class SelectedCollRemoveOperator(ParamRemoveOperator):
+    bl_idname = f"{PG_NAME_LC}.selected_coll_remove_param"
+    bl_label = "Remove Parameter"
+    def get_pg(self):
+        cx = bf.coll_from_selection()
+        return getattr(cx, PG_NAME_LC)
+    
+class SelectedCollAddOperator(ParamAddOperator):
+    bl_idname = f"{PG_NAME_LC}.selected_coll_add_param"
+    bl_label = "Add Parameter"
+    def get_pg(self):
+        cx = bf.coll_from_selection()
+        return getattr(cx, PG_NAME_LC)
+
 class PRUSASLICER_UL_IdValue(BaseList):
+    delete_operator = f"{PG_NAME_LC}.selected_coll_remove_param"
     def draw_properties(self, row, item):
         row.prop(item, "param_id")
         row.prop(item, "param_value")
 
 class PRUSASLICER_UL_PauseValue(BaseList):
+    delete_operator = f"{PG_NAME_LC}.selected_coll_remove_param"
     def draw_properties(self, row, item):
-        
-        
         sub_row = row.row(align=True)
         sub_row.prop(item, "param_type")
         sub_row.scale_x = 0.1
@@ -44,37 +58,16 @@ class PrusaSlicerPanel(BasePanel):
         pg = getattr(cx, PG_NAME_LC)
 
         layout = self.layout
+        sliceable = (pg.printer_config_file and pg.filament_config_file and pg.print_config_file)
 
         # Toggle button for single or multiple configuration files
         row = layout.row()
+        row.label(text=f"Slicing settings for Collection '{cx.name}'")
 
-        global blender_globals
-        sliceable = (pg.use_single_config and pg.config) or ((not pg.use_single_config or blender_globals["uses_manifest"]) and pg.printer_config_file and pg.filament_config_file and pg.print_config_file)
-
-        if blender_globals["uses_manifest"]:
+        row = layout.row()
+        for prop in ['printer', 'filament', 'print']:
             row = layout.row()
-            row.prop(pg, "printer_config_file_enum", text="Printer")
-            
-            row = layout.row()
-            row.prop(pg, "filament_config_file_enum", text="Filament")
-            
-            row = layout.row()
-            row.prop(pg, "print_config_file_enum", text="Print")
-
-        else:
-            row.prop(pg, "use_single_config", text="Use Single Configuration")
-            if pg.use_single_config:
-                row = layout.row()
-                row.prop(pg, "config", text="Configuration (.ini)")
-            else:
-                row = layout.row()
-                row.prop(pg, "printer_config_file", text="Printer (.ini)")
-                
-                row = layout.row()
-                row.prop(pg, "filament_config_file", text="Filament (.ini)")
-                
-                row = layout.row()
-                row.prop(pg, "print_config_file", text="Print (.ini)")
+            row.prop(pg, f"{prop}_config_file_enum", text=prop.capitalize())
 
         row = layout.row()
 
@@ -88,7 +81,6 @@ class PrusaSlicerPanel(BasePanel):
             op.mountpoint=""
             
         row.operator(f"{PG_NAME_LC}.slice", text="Open with PrusaSlicer").mode="open"
-        # row.enabled = False if pg.running else True
 
         if pg.print_time:
             row = layout.row()
@@ -148,7 +140,7 @@ class SlicerPanel_0_Overrides(BasePanel):
                 )
         
         row = layout.row()
-        row.operator(f"{PG_NAME_LC}.add_param").target=f"{self.list_id}"
+        row.operator(f"{PG_NAME_LC}.selected_coll_add_param").target=f"{self.list_id}"
 
 class SlicerPanel_1_Pauses(BasePanel):
     bl_label = "Pauses, Color Changes and Custom Gcode"
@@ -169,4 +161,4 @@ class SlicerPanel_1_Pauses(BasePanel):
                 )
         
         row = layout.row()
-        row.operator(f"{PG_NAME_LC}.add_param").target=f"{self.list_id}"
+        row.operator(f"{PG_NAME_LC}.selected_coll_add_param").target=f"{self.list_id}"

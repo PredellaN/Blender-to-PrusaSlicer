@@ -1,6 +1,9 @@
 import bpy
-from . import blender_globals
-from .functions.basic_functions import parse_csv_to_tuples
+import os
+from .functions.basic_functions import parse_csv_to_tuples, reset_selection
+from . import ADDON_FOLDER
+
+prefs = bpy.context.preferences.addons[__package__].preferences
 
 class ParamSearchListItem(bpy.types.PropertyGroup):
     param_id: bpy.props.StringProperty(name='') # type: ignore
@@ -24,17 +27,6 @@ class PauseListItem(bpy.types.PropertyGroup):
     ]) # type: ignore
     param_value: bpy.props.StringProperty(name='') # type: ignore
 
-def sorted_enums(filter):
-    if 'print_profiles' in blender_globals:
-        profiles = blender_globals['print_profiles']
-        enums = [(item['absolute_path'], item['label'], item['absolute_path']) for item in profiles if item['type'] == filter] + [("", "", "")]
-        return sorted(enums, key=lambda x: x[1])
-    return [("","","")]
-
-def reset_selection(object, field):
-    if getattr(object, field) > -1:
-        setattr(object, field, -1)
-
 def selection_to_list(object, search_term, search_list, search_index, search_field, target_list, target_list_field):
     if getattr(object, search_index) > -1:
         selection = getattr(object,search_list)[getattr(object, search_index)]
@@ -43,7 +35,26 @@ def selection_to_list(object, search_term, search_list, search_index, search_fie
         reset_selection(object, search_index)
         setattr(object, search_term, "")
 
+def get_enum(self, cat):
+    value = prefs.get_filtered_bundle_item_index(cat, getattr(self, f"{cat}_config_file"))
+    return value
+
+def set_enum(self, value, cat):
+    val = prefs.get_filtered_bundle_item_by_index(cat, value)
+    if val:
+        setattr(self, f"{cat}_config_file", val[0])
+    else:
+        setattr(self, f"{cat}_config_file", "")
+    return
+
+cached_bundle_items = {'printer' : None, 'filament' : None, 'print' : None}
+def get_items(self, cat):
+    global cached_bundle_items
+    cached_bundle_items = prefs.get_filtered_bundle_items(cat)
+    return cached_bundle_items
+
 class PrusaSlicerPropertyGroup(bpy.types.PropertyGroup):
+
     running: bpy.props.BoolProperty(name="is running", default=0) # type: ignore
     progress: bpy.props.IntProperty(name="", min=0, max=100, default=0) # type: ignore
     progress_text: bpy.props.StringProperty(name="") # type: ignore
@@ -58,40 +69,31 @@ class PrusaSlicerPropertyGroup(bpy.types.PropertyGroup):
         description="Use a single .ini configuration file",
         default=True
     ) # type: ignore
-    
-    printer_config_file: bpy.props.StringProperty(
-        name="Printer Configuration (.ini)",
-        subtype='FILE_PATH'
-    ) # type: ignore
-    
-    filament_config_file: bpy.props.StringProperty(
-        name="Filament Configuration (.ini)",
-        subtype='FILE_PATH'
-    ) # type: ignore
-    
-    print_config_file: bpy.props.StringProperty(
-        name="Print Configuration (.ini)",
-        subtype='FILE_PATH'
-    ) # type: ignore
 
+    printer_config_file: bpy.props.StringProperty() # type: ignore
     printer_config_file_enum: bpy.props.EnumProperty(
         name="Printer Configuration",
-        items=lambda self, context: sorted_enums('printer'),
-        update=lambda self, context: setattr(self, 'printer_config_file', self.printer_config_file_enum),
+        items=lambda self, context: get_items(self, 'printer'),
+        get=lambda self: get_enum(self, 'printer'),
+        set=lambda self, value: set_enum(self, value, 'printer'),
     ) # type: ignore
 
+    filament_config_file: bpy.props.StringProperty() # type: ignore
     filament_config_file_enum: bpy.props.EnumProperty(
         name="Filament Configuration",
-        items=lambda self, context: sorted_enums('filament'),
-        update=lambda self, context: setattr(self, 'filament_config_file', self.filament_config_file_enum),
+        items=lambda self, context: get_items(self, 'filament'),
+        get=lambda self: get_enum(self, 'filament'),
+        set=lambda self, value: set_enum(self, value, 'filament'),
     ) # type: ignore
 
+    print_config_file: bpy.props.StringProperty() # type: ignore
     print_config_file_enum: bpy.props.EnumProperty(
         name="Print Configuration",
-        items=lambda self, context: sorted_enums('print'),
-        update=lambda self, context: setattr(self, 'print_config_file', self.print_config_file_enum),
+        items=lambda self, context: get_items(self, 'print'),
+        get=lambda self: get_enum(self, 'print'),
+        set=lambda self, value: set_enum(self, value, 'print'),
     ) # type: ignore
-
+    
     def search_param_list(self, context):
         if not self.search_term:
             return
@@ -99,7 +101,8 @@ class PrusaSlicerPropertyGroup(bpy.types.PropertyGroup):
         self.search_list.clear()
         self.search_list_index = -1
 
-        search_db = parse_csv_to_tuples('functions/prusaslicer_fields.csv')
+        search_db_path = os.path.join(ADDON_FOLDER, 'functions', 'prusaslicer_fields.csv')
+        search_db = parse_csv_to_tuples(search_db_path)
         filtered_tuples = [tup for tup in search_db if all(word in (tup[1] + ' ' + tup[2]).lower() for word in self.search_term.lower().split())]
         sorted_tuples = sorted(filtered_tuples, key=lambda tup: tup[0])
 
