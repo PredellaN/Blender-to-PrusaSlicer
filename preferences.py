@@ -48,8 +48,8 @@ class ImportConfig(bpy.types.Operator):
         prefs = bpy.context.preferences.addons[__package__].preferences
         path=os.path.join(ADDON_FOLDER, 'cache', 'exported_config.json')
         configs = dict_from_json(path)
-        for config in configs:
-            prefs.prusaslicer_bundle_list[config].conf_enabled=True
+        for key, item in prefs.prusaslicer_bundle_list.items():
+            item.conf_enabled = True if item.name in configs else False
         redraw()
         return {'FINISHED'}
     
@@ -135,11 +135,6 @@ class PrusaSlicerPreferences(bpy.types.AddonPreferences):
                 if item.conf_id not in cache_conf_ids:
                     self.prusaslicer_bundle_list.remove(idx)
 
-            sorted_categories = {
-                'printer' : '1',
-                'filament' : '2',
-                'print' : '3',
-            }
             for key, config in self.profile_cache.config_headers.items():
                 if '*' in key:
                     continue
@@ -160,16 +155,16 @@ class PrusaSlicerPreferences(bpy.types.AddonPreferences):
 
     prusaslicer_path: bpy.props.StringProperty(
         name="PrusaSlicer path",
-        description="Path to the PrusaSlicer executable",
+        description="Path or command for the PrusaSlicer executable",
         subtype='FILE_PATH',
         default="switcherooctl -g 1 /home/nicolas/Applications/prusa3d_linux_2_8_1/PrusaSlicer-2.8.1+linux-x64-older-distros-GTK3-202409181354.AppImage",
     ) #type: ignore
 
     prusaslicer_bundles_folder: bpy.props.StringProperty(
         name="PrusaSlicer .ini bundles path",
-        description="Path to the PrusaSlicer configuration files",
+        description="Path to the folder containing the PrusaSlicer configurations (recursive)",
         subtype='FILE_PATH',
-        default="/home/nicolas/Antek Latvia/Workspace/Design Projects/3d Print Library/",
+        default="//profiles",
         update=update_config_bundle_manifest,
     ) #type: ignore
 

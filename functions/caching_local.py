@@ -1,6 +1,7 @@
 import os
 import re
 from configparser import ConfigParser, MissingSectionHeaderError
+from .. import ADDON_FOLDER
 
 class LocalCache:
     def __init__(self):
@@ -69,6 +70,9 @@ class LocalCache:
     def load_ini_files(self):
         # Sanitize and normalize the path
         sanitized_path = os.path.abspath(os.path.expanduser(self.directory))
+
+        if sanitized_path.startswith("//"):
+            sanitized_path = os.path.join(ADDON_FOLDER, sanitized_path.lstrip("/"))
 
         # Verify if the path exists and is a directory
         if not os.path.isdir(sanitized_path):
