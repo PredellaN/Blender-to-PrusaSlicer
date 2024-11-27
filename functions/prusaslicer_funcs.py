@@ -1,5 +1,6 @@
 
-import os, tempfile
+import os
+import tempfile
 import subprocess
 
 temp_dir = tempfile.gettempdir()
@@ -43,3 +44,6 @@ def err_to_tempfile(text):
     with open(temp_file_path, "w") as temp_file:
         temp_file.write(text)
     return temp_file_path
+
+def filter_prusaslicer_dict_by_section(dict, section):
+    return {k.split(":")[1]: v for k, v in dict.items() if k.split(":")[0] == section}
