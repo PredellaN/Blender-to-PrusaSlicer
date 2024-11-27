@@ -10,7 +10,7 @@ Slice models and open them in PrusaSlicer directly from Blender.
 
 - Import configurations from a folder containing PrusaSlicer .ini configuration files. You can export those from a PrusaSlicer project using File > Export > Export Config, or you can find them online.
 - Collection-based slicing: the settings are stored at a collection level: when selecting different objects to slice, the active configuration will reflect the current selection. This is especially useful when creating files for different printers.
-- Slicing directly to USB devices.
+- Slicing to disk (the .gcode will be generated in the same folder as your .blend file) or directly to USB devices.
 
 ![image](https://github.com/user-attachments/assets/a70932a4-0df0-46ef-81aa-1e9a0b64b0ee)
 
