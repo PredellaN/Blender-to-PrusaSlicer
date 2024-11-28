@@ -200,9 +200,15 @@ def dict_from_json(path):
     with open(path, 'r') as file:
         return json.load(file)
 
-def dump_dict_to_json(dict, path):
+def dump_dict_to_json(dictionary, path):
+    # Ensure the directory exists
+    folder = os.path.dirname(path)
+    if folder and not os.path.exists(folder):
+        os.makedirs(folder, exist_ok=True)
+    
+    # Write the dictionary to the file as JSON
     with open(path, 'w') as file:
-        json.dump(dict, file, indent=2)
+        json.dump(dictionary, file, indent=2)
 
 def load_manifest(path):
     if not path:

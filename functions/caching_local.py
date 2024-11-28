@@ -72,7 +72,9 @@ class LocalCache:
         sanitized_path = os.path.abspath(os.path.expanduser(self.directory))
 
         if sanitized_path.startswith("//"):
-            sanitized_path = os.path.join(ADDON_FOLDER, sanitized_path.lstrip("/"))
+            sanitized_path = os.path.normpath(
+                os.path.join(ADDON_FOLDER, sanitized_path.lstrip("/"))
+            )
 
         # Verify if the path exists and is a directory
         if not os.path.isdir(sanitized_path):

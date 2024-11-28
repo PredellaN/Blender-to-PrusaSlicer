@@ -34,6 +34,20 @@ def generate_config(id, profiles):
     conf_current.pop('compatible_printers_condition', None)
     return conf_current
 
+# def get_checks(conf_headers, profile):
+#     conf = conf_headers[profile]['conf_dict']
+
+#     if 'compatible_printers_condition' in conf:
+#         return conf['compatible_printers_condition']
+    
+#     checks = None
+#     if 'inherits' in conf:
+#         inherited_ids = ["printer:" + inherit_id.strip() for inherit_id in conf['inherits'].split(';')]
+#         for id in inherited_ids:
+#             checks += get_checks(conf_headers, profile)
+
+#     return checks
+
 class ConfigLoader:
     def __init__(self):
         self.config_dict = {}
