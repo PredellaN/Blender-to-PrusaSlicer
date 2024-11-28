@@ -8,10 +8,9 @@ This Blender add-on integrates PrusaSlicer directly within Blender, allowing for
 ## Features
 Slice models and open them in PrusaSlicer directly from Blender.
 
-- Import configurations either as a single .ini file (You can export this configuration file from a PrusaSlicer project using File > Export > Export Config.) or individual configuration files for printer, filament and print. URLs are also supported, which enables to for example fetch automatically the latest production version of the configuration.
-- Loading configurations from a .json manifest file, which you can point to in the addon preferences, to simplify the selection of profiles. As example, you can use "https://raw.githubusercontent.com/PredellaN/MOS-3d-Printing-Library/refs/heads/main/manifest.json".
+- Import configurations from a folder containing PrusaSlicer .ini configuration files. You can export those from a PrusaSlicer project using File > Export > Export Config, or you can find them online.
 - Collection-based slicing: the settings are stored at a collection level: when selecting different objects to slice, the active configuration will reflect the current selection. This is especially useful when creating files for different printers.
-- Slicing directly to USB devices.
+- Slicing to disk (the .gcode will be generated in the same folder as your .blend file) or directly to USB devices.
 
 ![image](https://github.com/user-attachments/assets/a70932a4-0df0-46ef-81aa-1e9a0b64b0ee)
 
@@ -33,7 +32,7 @@ Slice models and open them in PrusaSlicer directly from Blender.
 
 - Click Install and select the .zip file of the add-on.
 - Enable the add-on in the preferences.
-- Install psutil using the "Install dependencies" button in the add-on preferences
+- Install the psutil dependency using the "Install dependencies" button in the add-on preferences
 - In the add-on preferences also specify the path to the PrusaSlicer executable. Commands (such as flatpak run) are also supported.
 
 ## Usage
