@@ -83,7 +83,7 @@ class LocalCache:
 
         # List all .ini files in the directory and subdirectories
         current_files = {}
-        for root, _, files in os.walk(sanitized_path):
+        for root, _, files in os.walk(sanitized_path, followlinks=True):
             for file in files:
                 if file.endswith('.ini'):
                     file_path = os.path.join(root, file)
