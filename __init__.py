@@ -1,4 +1,5 @@
 import bpy, sys, os
+from . import globals
 
 ### Constants
 ADDON_FOLDER = os.path.dirname(os.path.abspath(__file__))
@@ -26,16 +27,14 @@ bl_info = {
 
 ### Initialization
 registered_classes = []
-dependencies_installed = False
-blender_globals = {}
+
 sys.path.append(DEPENDENCIES_FOLDER)
 
 
 def register():
     from .functions import modules as mod
 
-    global dependencies_installed
-    dependencies_installed = mod.are_dependencies_installed(DEPENDENCIES, DEPENDENCIES_FOLDER)
+    globals.dependencies_installed = mod.are_dependencies_installed(DEPENDENCIES)
 
     from . import preferences as pref
     mod.reload_modules([pref])

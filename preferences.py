@@ -1,11 +1,11 @@
-import bpy, os
+import bpy, os, sys
 import subprocess
 from .functions import modules as mod
 from .functions.basic_functions import ParamRemoveOperator, ParamAddOperator, reset_selection, dump_dict_to_json, dict_from_json, redraw
 from .functions.caching_local import LocalCache
 
 from . import PG_NAME_LC, DEPENDENCIES, DEPENDENCIES_FOLDER, ADDON_FOLDER
-from . import register, unregister, dependencies_installed  # Import the unregister and register functions
+from . import globals
 
 class install_dependencies(bpy.types.Operator):
     bl_idname = f"{PG_NAME_LC}.install_dependencies"
@@ -17,7 +17,7 @@ class install_dependencies(bpy.types.Operator):
         try:
             mod.install_pip()
             for dependency in DEPENDENCIES:
-                mod.install_and_import_module(module_name=dependency.module,
+                mod.install_module(module_name=dependency.module,
                                           package_name=dependency.package,
                                           global_name=dependency.name,
                                           path=DEPENDENCIES_FOLDER)
@@ -25,8 +25,8 @@ class install_dependencies(bpy.types.Operator):
             self.report({"ERROR"}, str(err))
             return {"CANCELLED"}
 
-        unregister()
-        register()
+        globals.dependencies_installed = mod.are_dependencies_installed(DEPENDENCIES)
+
         return {"FINISHED"}
     
 class ExportConfig(bpy.types.Operator):
@@ -194,7 +194,7 @@ class PrusaSlicerPreferences(bpy.types.AddonPreferences):
         row.operator(f"{PG_NAME_LC}.import_configs")
 
         layout = self.layout
-        if dependencies_installed:
+        if globals.dependencies_installed:
             layout.label(icon='CHECKMARK', text="Dependencies installed")
         else:
             layout.operator(f"{PG_NAME_LC}.install_dependencies", icon="CONSOLE")

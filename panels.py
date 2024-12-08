@@ -1,7 +1,8 @@
 import bpy # type: ignore
 from .functions.basic_functions import BasePanel, BaseList, SearchList, ParamAddOperator, ParamRemoveOperator, is_usb_device
 from .functions import blender_funcs as bf
-from . import PG_NAME_LC, dependencies_installed
+from . import PG_NAME_LC
+from . import globals
 
 class PRUSASLICER_UL_SearchParamValue(SearchList):
     def draw_properties(self, row, item):
@@ -94,7 +95,7 @@ class PrusaSlicerPanel(BasePanel):
         row.enabled = False
 
         ### USB Devices
-        if dependencies_installed:
+        if globals.dependencies_installed:
             import psutil
             partitions = psutil.disk_partitions()
 
