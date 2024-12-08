@@ -31,7 +31,7 @@ class install_dependencies(bpy.types.Operator):
     
 class ExportConfig(bpy.types.Operator):
     bl_idname = f"{PG_NAME_LC}.export_configs"
-    bl_label = "Export Configurations List"
+    bl_label = "Export Selected Configurations list"
 
     def execute(self, context):
         prefs = bpy.context.preferences.addons[__package__].preferences
@@ -42,7 +42,7 @@ class ExportConfig(bpy.types.Operator):
     
 class ImportConfig(bpy.types.Operator):
     bl_idname = f"{PG_NAME_LC}.import_configs"
-    bl_label = "Import Configurations List"
+    bl_label = "Import Selected Configurations list"
 
     def execute(self, context):
         prefs = bpy.context.preferences.addons[__package__].preferences
@@ -95,6 +95,23 @@ class SelectedCollAddOperator(ParamAddOperator):
     def get_pg(self):
         return bpy.context.preferences.addons[__package__].preferences
 
+def guess_prusaslicer_path():
+    # Original fallback default
+    fallback = "switcherooctl -g 1 /home/nicolas/Applications/prusa3d_linux_2_8_1/PrusaSlicer-2.8.1+linux-x64-older-distros-GTK3-202409181354.AppImage"
+    
+    if sys.platform.startswith("win"):
+        # Common default path on Windows
+        candidate = r"C:\Program Files\Prusa3D\PrusaSlicer\prusa-slicer.exe"
+        if os.path.isfile(candidate):
+            return candidate
+    elif sys.platform.startswith("darwin"):  # macOS
+        # Common macOS application path
+        candidate = "/Applications/PrusaSlicer.app/Contents/MacOS/PrusaSlicer"
+        if os.path.isfile(candidate) or os.access(candidate, os.X_OK):
+            return candidate
+
+    # If no suitable guess was found, return fallback
+    return fallback
 class PrusaSlicerPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
     profile_cache = LocalCache()
@@ -157,7 +174,7 @@ class PrusaSlicerPreferences(bpy.types.AddonPreferences):
         name="PrusaSlicer path",
         description="Path or command for the PrusaSlicer executable",
         subtype='FILE_PATH',
-        default="switcherooctl -g 1 /home/nicolas/Applications/prusa3d_linux_2_8_1/PrusaSlicer-2.8.1+linux-x64-older-distros-GTK3-202409181354.AppImage",
+        default=guess_prusaslicer_path(),
     ) #type: ignore
 
     prusaslicer_bundles_folder: bpy.props.StringProperty(
