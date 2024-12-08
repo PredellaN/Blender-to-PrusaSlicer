@@ -50,7 +50,11 @@ Slice models and open them in PrusaSlicer directly from Blender.
 
 ## Troubleshooting
 - If after installing the dependencies the addon doesn't reload correctly, close and re-open blender, and re-activate the addon.
-- If using a sandboxed PrusaSlicer such as the flatpak version, make sure PrusaSlicer can write temporary files (in Linux, this means being allowed to write to /tmp ).
+- If using a sandboxed PrusaSlicer such as the flatpak version, make sure PrusaSlicer can write temporary files (in Linux, this means being allowed to write to /tmp ). The AppImage version however is the only one i currently support.
+
+## Coming Soon
+- Multi-material slicing
+- In-blender gcode preview
 
 ## License
 This project is licensed under the MIT License.
