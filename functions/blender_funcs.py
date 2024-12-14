@@ -7,8 +7,6 @@ import numpy as np
 import struct
 import math
 
-from .basic_functions import dict_from_json
-
 from collections import Counter
 
 def names_array_from_objects(obj_names):

@@ -6,7 +6,7 @@ from .functions import modules as mod
 from .functions.basic_functions import ParamRemoveOperator, ParamAddOperator, reset_selection, dump_dict_to_json, dict_from_json, redraw
 from .functions.caching_local import LocalCache
 
-from . import PG_NAME_LC, DEPENDENCIES, DEPENDENCIES_FOLDER, ADDON_FOLDER
+from . import PG_NAME_LC, DEPENDENCIES, DEPENDENCIES_FOLDER
 from . import globals
 
 class install_dependencies(bpy.types.Operator):
