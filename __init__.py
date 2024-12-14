@@ -2,7 +2,6 @@ import bpy, os
 
 ### Constants
 ADDON_FOLDER = os.path.dirname(os.path.abspath(__file__))
-DEPENDENCIES_FOLDER = os.path.join(ADDON_FOLDER, "deps")
 PG_NAME = "BlenderToPrusaSlicer"
 PG_NAME_LC = PG_NAME.lower()
 
