@@ -11,9 +11,9 @@ from .basic_functions import dict_from_json
 
 from collections import Counter
 
-def names_array_from_objects(objects):
-    object_names = [re.sub(r'\.\d{0,3}$', '', obj.name) for obj in objects]
-    name_counter = Counter(object_names)
+def names_array_from_objects(obj_names):
+    summarized_names = [re.sub(r'\.\d{0,3}$', '', name) for name in obj_names]
+    name_counter = Counter(summarized_names)
     final_names = [f"{count}x_{name}" if count > 1 else name for name, count in name_counter.items()]
     final_names.sort()
     return final_names
@@ -33,20 +33,6 @@ def generate_config(id, profiles):
     conf_current.pop('inherits', None)
     conf_current.pop('compatible_printers_condition', None)
     return conf_current
-
-# def get_checks(conf_headers, profile):
-#     conf = conf_headers[profile]['conf_dict']
-
-#     if 'compatible_printers_condition' in conf:
-#         return conf['compatible_printers_condition']
-    
-#     checks = None
-#     if 'inherits' in conf:
-#         inherited_ids = ["printer:" + inherit_id.strip() for inherit_id in conf['inherits'].split(';')]
-#         for id in inherited_ids:
-#             checks += get_checks(conf_headers, profile)
-
-#     return checks
 
 class ConfigLoader:
     def __init__(self):
@@ -160,12 +146,12 @@ class ConfigLoader:
 
         self.overrides_dict['layer_gcode'] = combined_layer_gcode 
 
-def calculate_md5(file_path):
+def calculate_md5(file_paths):
     md5_hash = hashlib.md5()
-    with open(file_path, "rb") as f:
-        # Read the file in chunks to avoid using too much memory
-        for byte_block in iter(lambda: f.read(4096), b""):
-            md5_hash.update(byte_block)
+    for file_path in file_paths:
+        with open(file_path, "rb") as f:
+            for byte_block in iter(lambda: f.read(4096), b""):
+                md5_hash.update(byte_block)
     return md5_hash.hexdigest()
 
 def coll_from_selection():

@@ -68,52 +68,53 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
         loader = bf.ConfigLoader()
 
-        try:
-            loader.load_config(pg.printer_config_file, prefs.profile_cache.config_headers, append=False)
-            loader.load_config(pg.filament_config_file, prefs.profile_cache.config_headers, append=True)
-            loader.load_config(pg.print_config_file, prefs.profile_cache.config_headers, append=True)
-            loader.load_list_to_overrides(pg.list)
-            loader.add_pauses_and_changes(pg.pause_list)
-        except:
-            show_progress(pg, 0, f'Error: failed to load configuration')
+        if pg.printer_config_file and pg.filament_config_file and pg.print_config_file:
+            try:
+                loader.load_config(pg.printer_config_file, prefs.profile_cache.config_headers, append=False)
+                loader.load_config(pg.filament_config_file, prefs.profile_cache.config_headers, append=True)
+                loader.load_config(pg.print_config_file, prefs.profile_cache.config_headers, append=True)
+                loader.load_list_to_overrides(pg.list)
+                loader.add_pauses_and_changes(pg.pause_list)
+            except:
+                show_progress(pg, 0, f'Error: failed to load configuration')
 
-            pg.running = 0
-            return {'FINISHED'}
+                pg.running = 0
+                return {'FINISHED'}
 
         show_progress(pg, 10, "Exporting STL...")
 
-        obj_names = bf.names_array_from_objects(context.selected_objects)
+        objects = context.selected_objects
+        obj_names = [obj.name for obj in objects]
 
         if not len(obj_names):
             show_progress(pg, 0, f'Error: selection empty')
             getattr(cx, PG_NAME_LC).running = 0
             return{'FINISHED'}
 
-        paths = determine_paths(loader.config_with_overrides, "-".join(obj_names), self.mountpoint)
+        paths = determine_paths(loader.config_with_overrides, obj_names, self.mountpoint)
 
         global temp_files
         temp_files = []
 
         depsgraph = bpy.context.evaluated_depsgraph_get()
+
         selected_objects = [obj.evaluated_get(depsgraph) for obj in bpy.context.selected_objects if obj.type == 'MESH']
+        tris_by_object = [bf.objects_to_tris([obj], 1000) for obj in selected_objects]
 
-        tris = bf.objects_to_tris(selected_objects, 1000)
-
-        vertices = tris[:, :3, :]
-        min_coords = vertices.min(axis=(0, 1))
-        max_coords = vertices.max(axis=(0, 1))
+        global_tris = np.concatenate(tris_by_object)
+        vertices = global_tris[:, :3, :]
+        min_coords, max_coords = vertices.min(axis=(0, 1)), vertices.max(axis=(0, 1))
         bed_size = gf.get_bed_size(loader.config_with_overrides['bed_shape']) if 'bed_shape' in loader.config_with_overrides else (0, 0)
-        transform = -((min_coords + max_coords) / 2) + np.array([bed_size[0]/2,bed_size[1]/2,0])
-        tris = bf.transform_tris(tris, transform)
+        transform = -((min_coords + max_coords) / 2) + np.array([bed_size[0]/2, bed_size[1]/2, 0])
 
-        bf.save_stl(tris, paths.stl_path)
-        temp_files.append(paths.stl_path)
+        for i, tris in enumerate(tris_by_object):
+            tris_transformed = bf.transform_tris(tris, transform)
+            bf.save_stl(tris_transformed, paths.stl_paths[i])
+            temp_files.append(paths.stl_paths[i])
 
         if not loader.config_dict:
             show_progress(pg, 100, 'Opening PrusaSlicer')
-            command = [
-                os.path.join(paths.stl_path),
-            ]
+            command = paths.stl_paths
 
             thread = threading.Thread(target=run_slice, args=[command, cx, ws, None, None])
             thread.start()
@@ -125,10 +126,8 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
         if self.mode == "open":
             show_progress(pg, 100, 'Opening PrusaSlicer')
-            command = [
-                "--load", paths.ini_path, 
-                os.path.join(paths.stl_path),
-            ]
+            command = paths.stl_paths + ["--load", paths.ini_path] + ["--dont-arrange"]
+
             thread = threading.Thread(target=psf.exec_prusaslicer, args=[command, prusaslicer_path])
             thread.start()
 
@@ -137,8 +136,8 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
         if os.path.exists(paths.gcode_temp_path) and os.path.exists(paths.json_temp_path):
             cached_data = dict_from_json(paths.json_temp_path)
-            stl_chk = bf.calculate_md5(paths.stl_path)
-            ini_chk = bf.calculate_md5(paths.ini_path)
+            stl_chk = bf.calculate_md5(paths.stl_paths)
+            ini_chk = bf.calculate_md5([paths.ini_path])
 
             if stl_chk == cached_data.get('stl_chk') and ini_chk == cached_data.get('ini_chk'):
 
@@ -157,9 +156,13 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
             show_progress(pg, 30, 'Slicing with PrusaSlicer...')
             command = [
                 "--load", paths.ini_path, 
-                "-g", os.path.join(paths.stl_path),
+                "-g",
+                "--dont-arrange",
+                "--merge",
                 "--output", os.path.join(paths.gcode_temp_path)
             ]
+            for path in paths.stl_paths:
+                command += [path]
 
             callback = partial(show_preview, paths.gcode_temp_path) if self.mode == "slice_and_preview" else None # if slicing to USB don't show a preview
             thread = threading.Thread(target=run_slice, args=[command, cx, ws, paths, [callback]])
@@ -167,13 +170,14 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
             return {'FINISHED'}
 
-def determine_paths(config, base_filename, mountpoint):
-    paths = namedtuple('Paths', ['ini_path', 'stl_path', 'stl_temp_path', 'gcode_path', 'gcode_temp_path', 'json_temp_path'], defaults=[""]*5)
+def determine_paths(config, obj_names, mountpoint):
+    paths = namedtuple('Paths', ['ini_path', 'stl_paths', 'stl_temp_path', 'gcode_path', 'gcode_temp_path', 'json_temp_path'], defaults=[""]*5)
+
+    base_filename = "-".join(bf.names_array_from_objects(obj_names))
 
     filament = config.get('filament_type', 'Unknown filament')
     printer = config.get('printer_model', 'Unknown printer')
 
-    stl_file_name = base_filename + ".stl"
     extension = "bgcode" if config.get('binary_gcode', '0') == '1' else "gcode"
     full_filename = f"{base_filename}-{filament}-{printer}"
     gcode_filename = f"{full_filename}.{extension}"
@@ -182,7 +186,7 @@ def determine_paths(config, base_filename, mountpoint):
     temp_dir = tempfile.gettempdir()
 
     blendfile_directory = os.path.dirname(bpy.data.filepath)
-    paths.stl_path = os.path.join(temp_dir, stl_file_name)
+    paths.stl_paths = [os.path.join(temp_dir, base_filename + "_" + str(i) + ".stl") for i, obj in enumerate(obj_names)]
 
     if mountpoint:
         gcode_dir = mountpoint
@@ -214,8 +218,8 @@ def run_slice(command, cx, ws, paths, callbacks = None):
         
         if paths.gcode_temp_path:
             checksums = {
-                "stl_chk": bf.calculate_md5(paths.stl_path),
-                "ini_chk": bf.calculate_md5(paths.ini_path)
+                "stl_chk": bf.calculate_md5(paths.stl_paths),
+                "ini_chk": bf.calculate_md5([paths.ini_path])
             }
             with open(paths.json_temp_path, 'w') as json_file:
                 json.dump(checksums, json_file, indent=4)
