@@ -20,7 +20,7 @@ bl_info = {
     "author" : "Nicolas Predella",
     "description" : "PrusaSlicer integration into Blender",
     "blender" : (4, 2, 0),
-    "version" : (0, 1, 0),  
+    "version" : (1, 0, 0),  
     "location" : "",
     "warning" : "",
 }
