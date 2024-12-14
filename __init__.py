@@ -1,19 +1,10 @@
-import bpy, sys, os
-from . import globals
+import bpy, os
 
 ### Constants
 ADDON_FOLDER = os.path.dirname(os.path.abspath(__file__))
 DEPENDENCIES_FOLDER = os.path.join(ADDON_FOLDER, "deps")
 PG_NAME = "BlenderToPrusaSlicer"
 PG_NAME_LC = PG_NAME.lower()
-
-### Dependencies (for when wheels are not bundled)
-from collections import namedtuple
-Dependency = namedtuple("Dependency", ["module", "package", "name"])
-DEPENDENCIES = (
-    Dependency(module="psutil", package=None, name=None),
-    )
-# sys.path.append(DEPENDENCIES_FOLDER)
 
 ### Blender Addon Initialization
 bl_info = {
@@ -32,10 +23,7 @@ registered_classes = []
 def register():
     from .functions import modules as mod
 
-    globals.dependencies_installed = mod.are_dependencies_installed(DEPENDENCIES)
-
     from . import preferences as pref
-    mod.reload_modules([pref])
     registered_classes.extend(mod.register_classes(mod.get_classes([pref])))
     prefs = bpy.context.preferences.addons[__package__].preferences
     prefs.update_config_bundle_manifest()
@@ -43,7 +31,6 @@ def register():
     from . import operators as op
     from . import panels as pn
     from . import property_groups as pg
-    mod.reload_modules([op, pn, pg])
     registered_classes.extend(mod.register_classes(mod.get_classes([op,pn,pg])))
 
     setattr(bpy.types.Collection, PG_NAME_LC, bpy.props.PointerProperty(type=pg.PrusaSlicerPropertyGroup))

@@ -95,26 +95,25 @@ class PrusaSlicerPanel(BasePanel):
         row.enabled = False
 
         ### USB Devices
-        if globals.dependencies_installed:
-            import psutil
-            partitions = psutil.disk_partitions()
+        import psutil
+        partitions = psutil.disk_partitions()
 
-            for partition in partitions:
-                if is_usb_device(partition):
-                    row = layout.row()
-                    row.label(text="Detected USB Devices:")
-                    break
+        for partition in partitions:
+            if is_usb_device(partition):
+                row = layout.row()
+                row.label(text="Detected USB Devices:")
+                break
 
-            for partition in partitions:
-                if is_usb_device(partition):
-                    row = layout.row()
-                    mountpoint = partition.mountpoint
-                    row.enabled = False if pg.running else True
-                    row.operator(f"{PG_NAME_LC}.unmount_usb", text="", icon='UNLOCKED').mountpoint=mountpoint
-                    op = row.operator(f"{PG_NAME_LC}.slice", text="", icon='DISK_DRIVE')
-                    op.mountpoint=mountpoint
-                    op.mode = "slice"
-                    row.label(text=f"{mountpoint.split('/')[-1]} mounted at {mountpoint} ({partition.device})")
+        for partition in partitions:
+            if is_usb_device(partition):
+                row = layout.row()
+                mountpoint = partition.mountpoint
+                row.enabled = False if pg.running else True
+                row.operator(f"{PG_NAME_LC}.unmount_usb", text="", icon='UNLOCKED').mountpoint=mountpoint
+                op = row.operator(f"{PG_NAME_LC}.slice", text="", icon='DISK_DRIVE')
+                op.mountpoint=mountpoint
+                op.mode = "slice"
+                row.label(text=f"{mountpoint.split('/')[-1]} mounted at {mountpoint} ({partition.device})")
 
 class SlicerPanel_0_Overrides(BasePanel):
     bl_label = "Configuration Overrides"
