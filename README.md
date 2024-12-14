@@ -57,5 +57,5 @@ Slice models and open them in PrusaSlicer directly from Blender.
 - In-blender gcode preview
 
 ## License
-This project is licensed under the MIT License.
+This project is licensed under GPL-3.0.
 Prusaslicer (Licensed under AGPL-3.0) profiles for Prusa printers are bundled together with the addon; a copy of the license is provided.
