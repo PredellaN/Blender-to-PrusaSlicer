@@ -29,7 +29,6 @@ bl_info = {
 ### Initialization
 registered_classes = []
 
-
 def register():
     from .functions import modules as mod
 
