@@ -7,12 +7,13 @@ DEPENDENCIES_FOLDER = os.path.join(ADDON_FOLDER, "deps")
 PG_NAME = "BlenderToPrusaSlicer"
 PG_NAME_LC = PG_NAME.lower()
 
-### Dependencies
+### Dependencies (for when wheels are not bundled)
 from collections import namedtuple
 Dependency = namedtuple("Dependency", ["module", "package", "name"])
 DEPENDENCIES = (
     Dependency(module="psutil", package=None, name=None),
     )
+# sys.path.append(DEPENDENCIES_FOLDER)
 
 ### Blender Addon Initialization
 bl_info = {
@@ -27,8 +28,6 @@ bl_info = {
 
 ### Initialization
 registered_classes = []
-
-sys.path.append(DEPENDENCIES_FOLDER)
 
 
 def register():
