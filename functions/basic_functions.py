@@ -1,11 +1,9 @@
-import requests
-import urllib.request
 import json
 import bpy
 
 import time
 import shutil
-import threading
+import multiprocessing
 import platform
 import csv
 import os
@@ -14,7 +12,7 @@ import cProfile
 import pstats
 import io
 
-from .. import PG_NAME_LC
+from .. import TYPES_NAME
 
 class BasePanel(bpy.types.Panel):
     bl_label = "Default Panel"
@@ -62,7 +60,7 @@ class BaseList(bpy.types.UIList):
         pass
 
 class ParamAddOperator(bpy.types.Operator):
-    bl_idname = f"{PG_NAME_LC}.generic_add_operator"
+    bl_idname = f"{TYPES_NAME}.generic_add_operator"
     bl_label = "Add Parameter"
     target: bpy.props.StringProperty() # type: ignore
 
@@ -81,7 +79,7 @@ class ParamAddOperator(bpy.types.Operator):
         pass
 
 class ParamRemoveOperator(bpy.types.Operator):
-    bl_idname = f"{PG_NAME_LC}.generic_remove_operator"
+    bl_idname = f"{TYPES_NAME}.generic_remove_operator"
     bl_label = "Generic Remove Operator"
     target: bpy.props.StringProperty() # type: ignore
     item_index: bpy.props.IntProperty() # type: ignore
@@ -126,8 +124,8 @@ def is_usb_device(partition):
         return 'usb' in partition.opts or "/media" in partition.mountpoint
 
 def threaded_copy(from_file, to_file):
-    thread = threading.Thread(target=shutil.copy, args=[from_file, to_file])
-    thread.start()
+    process = multiprocessing.Process(target=shutil.copy, args=(from_file, to_file))
+    process.start()
 
 def show_progress(ref, progress, progress_text = ""):
     setattr(ref, 'progress', progress)
@@ -178,24 +176,6 @@ def reset_selection(object, field):
     if getattr(object, field) > -1:
         setattr(object, field, -1)
 
-def json_to_dict(source):
-    try:
-        # Check if the source is a URL
-        if source.startswith('http://') or source.startswith('https://'):
-            print('Web access: Requesting json')
-            response = requests.get(source, headers={"Cache-Control": "no-cache"})
-            response.raise_for_status()  # Raise an exception for HTTP errors
-            dict = response.json()   # Parse JSON from the URL content
-        else:
-            # Assume it's a file path and read from the local file system
-            dict = dict_from_json(source)
-
-        return dict
-
-    except (FileNotFoundError, json.JSONDecodeError, requests.RequestException) as e:
-        print(f"Error loading: {e}")
-        return None
-
 def dict_from_json(path):
     with open(path, 'r') as file:
         return json.load(file)
@@ -209,52 +189,3 @@ def dump_dict_to_json(dictionary, path):
     # Write the dictionary to the file as JSON
     with open(path, 'w') as file:
         json.dump(dictionary, file, indent=2)
-
-def load_manifest(path):
-    if not path:
-        return {}
-    manifest = json_to_dict(path)
-    if manifest is None:
-        return {}
-    manifest = make_absolute_path(manifest, path)
-    return manifest
-
-def make_absolute_path(manifest, path):
-    base_path = os.path.dirname(path)
-    
-    for profile in manifest:
-        if path.startswith("http://") or path.startswith("https://"):
-            # If it's a URL, concatenate using a forward slash
-            profile['absolute_path'] = base_path.rstrip("/") + "/" + profile['path'].lstrip("/")
-        else:
-            # If it's a local file path, use os.path.join
-            profile['absolute_path'] = os.path.join(base_path, profile['path'])
-    return manifest
-
-def make_file_local(self, path):
-    if path.startswith('http://') or path.startswith('https://'):
-        # Get the filename from the URL
-        parsed_url = urllib.parse.urlparse(path)
-        filename = os.path.basename(parsed_url.path) if parsed_url.path else 'blob'
-        
-        # Encode URL and request
-        encoded_path = urllib.parse.quote(path, safe="%/:=&?")
-        request = urllib.request.Request(
-            encoded_path,
-            headers={'Cache-Control': 'no-cache', 'Pragma': 'no-cache'}
-        )
-        response = urllib.request.urlopen(request)
-        
-        # Remove old temporary file if it exists
-        if 'temp_path' in locals() and os.path.exists(temp_path):
-            os.remove(temp_path)
-        
-        # Write downloaded content to temporary file
-        file_content = response.read().decode('utf-8')
-        temp_path = os.path.join(self.temp_dir, filename)
-        with open(temp_path, 'w') as file:
-            file.write(file_content)
-        return temp_path
-    else:
-        # For local paths, use the basename directly
-        return bpy.path.abspath(path)

@@ -6,33 +6,10 @@ from .functions import modules as mod
 from .functions.basic_functions import ParamRemoveOperator, ParamAddOperator, reset_selection, dump_dict_to_json, dict_from_json, redraw
 from .functions.caching_local import LocalCache
 
-from . import PG_NAME_LC, DEPENDENCIES, DEPENDENCIES_FOLDER
-from . import globals
-
-class install_dependencies(bpy.types.Operator):
-    bl_idname = f"{PG_NAME_LC}.install_dependencies"
-    bl_label = "Install dependencies"
-    bl_description = ("Downloads and installs the required python packages for this add-on")
-    bl_options = {"REGISTER", "INTERNAL"}
-
-    def execute(self, context):
-        try:
-            mod.install_pip()
-            for dependency in DEPENDENCIES:
-                mod.install_module(module_name=dependency.module,
-                                          package_name=dependency.package,
-                                          global_name=dependency.name,
-                                          path=DEPENDENCIES_FOLDER)
-        except (subprocess.CalledProcessError, ImportError) as err:
-            self.report({"ERROR"}, str(err))
-            return {"CANCELLED"}
-
-        globals.dependencies_installed = mod.are_dependencies_installed(DEPENDENCIES)
-
-        return {"FINISHED"}
+from . import TYPES_NAME
     
 class ExportConfig(bpy.types.Operator, ExportHelper):
-    bl_idname = f"{PG_NAME_LC}.export_configs"
+    bl_idname = f"{TYPES_NAME}.export_configs"
     bl_label = "Export Selected Configurations list"
 
     filename_ext = ".json"
@@ -44,7 +21,7 @@ class ExportConfig(bpy.types.Operator, ExportHelper):
         return {'FINISHED'}
     
 class ImportConfig(bpy.types.Operator, ImportHelper):
-    bl_idname = f"{PG_NAME_LC}.import_configs"
+    bl_idname = f"{TYPES_NAME}.import_configs"
     bl_label = "Import Selected Configurations list"
 
     filename_ext = ".json"
@@ -91,7 +68,7 @@ class ConfListItem(bpy.types.PropertyGroup):
     conf_cache_path: bpy.props.StringProperty(name='') # type: ignore
 
 class SelectedCollRemoveOperator(ParamRemoveOperator):
-    bl_idname = f"{PG_NAME_LC}.pref_remove_param"
+    bl_idname = f"{TYPES_NAME}.pref_remove_param"
     bl_label = "Remove Bundle"
     def get_pg(self):
         return bpy.context.preferences.addons[__package__].preferences
@@ -100,15 +77,12 @@ class SelectedCollRemoveOperator(ParamRemoveOperator):
         prefs.update_config_bundle_manifest()
     
 class SelectedCollAddOperator(ParamAddOperator):
-    bl_idname = f"{PG_NAME_LC}.pref_add_param"
+    bl_idname = f"{TYPES_NAME}.pref_add_param"
     bl_label = "Add Bundle"
     def get_pg(self):
         return bpy.context.preferences.addons[__package__].preferences
 
 def guess_prusaslicer_path():
-    # Original fallback default
-    fallback = "switcherooctl -g 1 /home/nicolas/Applications/prusa3d_linux_2_8_1/PrusaSlicer-2.8.1+linux-x64-older-distros-GTK3-202409181354.AppImage"
-    
     if sys.platform.startswith("win"):
         # Common default path on Windows
         candidate = r"C:\Program Files\Prusa3D\PrusaSlicer\prusa-slicer.exe"
@@ -119,9 +93,14 @@ def guess_prusaslicer_path():
         candidate = "/Applications/PrusaSlicer.app/Contents/MacOS/PrusaSlicer"
         if os.path.isfile(candidate) or os.access(candidate, os.X_OK):
             return candidate
+    elif sys.platform.startswith("linux"):  # Linux
+        # Linux AppImage path
+        candidate = os.path.expanduser("~/AppImages/prusaslicer.appimage")
+        if os.path.isfile(candidate) or os.access(candidate, os.X_OK):
+            return candidate
 
-    # If no suitable guess was found, return fallback
-    return fallback
+    return ''
+
 class PrusaSlicerPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
     profile_cache = LocalCache()
@@ -217,11 +196,5 @@ class PrusaSlicerPreferences(bpy.types.AddonPreferences):
         
         layout = self.layout
         row = layout.row()
-        row.operator(f"{PG_NAME_LC}.export_configs")
-        row.operator(f"{PG_NAME_LC}.import_configs")
-
-        layout = self.layout
-        if globals.dependencies_installed:
-            layout.label(icon='CHECKMARK', text="Dependencies installed")
-        else:
-            layout.operator(f"{PG_NAME_LC}.install_dependencies", icon="CONSOLE")
+        row.operator(f"{TYPES_NAME}.export_configs")
+        row.operator(f"{TYPES_NAME}.import_configs")

@@ -1,6 +1,6 @@
 import bpy
 from bpy.utils import register_class, unregister_class
-import os, subprocess, sys, importlib
+import importlib
 import inspect
 
 def reload_modules(modules):
@@ -26,40 +26,3 @@ def unregister_classes(classes):
         except:
             continue
     return []
-
-def install_pip():
-    try:
-        subprocess.run([sys.executable, "-m", "pip", "--version"], check=True)
-    except subprocess.CalledProcessError:
-        import ensurepip
-
-        ensurepip.bootstrap()
-        os.environ.pop("PIP_REQ_TRACKER", None)
-
-def import_module(module_name, global_name=None):
-    if global_name is None:
-        global_name = module_name
-
-    if global_name in globals():
-        importlib.reload(globals()[global_name])
-    else:
-        globals()[global_name] = importlib.import_module(module_name)
-
-def are_dependencies_installed(dependencies):
-    try:
-        for dependency in dependencies:
-            import_module(module_name=dependency.module, global_name=dependency.name)
-        return True
-    except ModuleNotFoundError:
-        return False
-
-def install_module(module_name, package_name=None, global_name=None, path=None):
-    package_name = module_name if package_name is None else package_name
-    global_name = module_name if package_name is None else global_name
-
-    if path:
-        subprocess.run([sys.executable, "-m", "pip", "install", package_name] + ['-t', path], check=True)
-    else:
-        subprocess.run([sys.executable, "-m", "pip", "install", package_name], check=True)
-
-    importlib.invalidate_caches()

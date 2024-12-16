@@ -1,11 +1,11 @@
 schema_version = "1.0.0"
-id = "Blender_to_PrusaSlicer"
+id = "UnexpectedSlicer"
 version = "1.0.0"
-name = "Blender-to-PrusaSlicer"
+name = "UnexpectedSlicer"
 tagline = "Slice models directly from Blender"
 maintainer = "Nicolas Predella <nicolas.predella@antek.it>"
 type = "add-on"
-website = "https://github.com/PredellaN/Blender-to-PrusaSlicer"
+website = "https://github.com/PredellaN/UnexpectedSlicer"
 blender_version_min = "4.3.0"
 license = [
     "SPDX:GPL-3.0-or-later"
@@ -17,13 +17,16 @@ platforms = [
     "linux-x64"
 ]
 wheels = [
-    "./wheels/psutil-6.1.0-cp311-abi3-macosx_10_9_x86_64.whl",
-    "./wheels/psutil-6.1.0-cp311-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
-    "./wheels/psutil-6.1.0-cp311-abi3-win_amd64.whl"
+    "./wheels/wheels/psutil-6.1.0-cp36-abi3-macosx_10_9_x86_64.whl",
+    "./wheels/wheels/psutil-6.1.0-cp36-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "./wheels/wheels/psutil-6.1.0-cp37-abi3-win_amd64.whl"
 ]
 copyright = [
   "2016-2024 PrusaSlicer, Prusa Research a.s., released under GNU AGPLv3"
 ]
+
+[permissions]
+files = "Import/export of configurations, creation of tempfiles that are required to run the slicing process"
 
 [build]
 paths_exclude_pattern = [

@@ -1,22 +1,13 @@
-import bpy, sys, os
-from . import globals
+import bpy, os
 
 ### Constants
 ADDON_FOLDER = os.path.dirname(os.path.abspath(__file__))
-DEPENDENCIES_FOLDER = os.path.join(ADDON_FOLDER, "deps")
-PG_NAME = "BlenderToPrusaSlicer"
-PG_NAME_LC = PG_NAME.lower()
-
-### Dependencies
-from collections import namedtuple
-Dependency = namedtuple("Dependency", ["module", "package", "name"])
-DEPENDENCIES = (
-    Dependency(module="psutil", package=None, name=None),
-    )
+PG_NAME = "UnexpectedSlicer"
+TYPES_NAME = "blendertoprusaslicer"
 
 ### Blender Addon Initialization
 bl_info = {
-    "name" : "Blender To PrusaSlicer",
+    "name" : "UnexpectedSlicer",
     "author" : "Nicolas Predella",
     "description" : "PrusaSlicer integration into Blender",
     "blender" : (4, 2, 0),
@@ -28,13 +19,8 @@ bl_info = {
 ### Initialization
 registered_classes = []
 
-sys.path.append(DEPENDENCIES_FOLDER)
-
-
 def register():
     from .functions import modules as mod
-
-    globals.dependencies_installed = mod.are_dependencies_installed(DEPENDENCIES)
 
     from . import preferences as pref
     mod.reload_modules([pref])
@@ -48,12 +34,13 @@ def register():
     mod.reload_modules([op, pn, pg])
     registered_classes.extend(mod.register_classes(mod.get_classes([op,pn,pg])))
 
-    setattr(bpy.types.Collection, PG_NAME_LC, bpy.props.PointerProperty(type=pg.PrusaSlicerPropertyGroup))
+    bpy.types.Collection.blendertoprusaslicer = bpy.props.PointerProperty(type=pg.PrusaSlicerPropertyGroup, name="blendertoprusaslicer")
 
 def unregister():   
     from .functions import modules as mod
 
     mod.unregister_classes(registered_classes)
+    del bpy.types.Collection.blendertoprusaslicer
 
 
 if __name__ == "__main__":
