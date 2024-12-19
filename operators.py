@@ -120,7 +120,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
         if not loader.config_dict:
             show_progress(pg, 100, 'Opening PrusaSlicer')
-            command = paths.stl_path
+            command = [paths.stl_path]
 
             results_queue = multiprocessing.Queue()
             process = multiprocessing.Process(target=run_slice, args=(command, None, results_queue))
@@ -134,7 +134,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
         if self.mode == "open":
             show_progress(pg, 100, 'Opening PrusaSlicer')
-            command = paths.stl_path + ["--load", paths.ini_path] + ["--dont-arrange"]
+            command = [paths.stl_path] + ["--load", paths.ini_path] + ["--dont-arrange"]
 
             process = multiprocessing.Process(target=psf.exec_prusaslicer, args=(command, prusaslicer_path,))
             process.start()
