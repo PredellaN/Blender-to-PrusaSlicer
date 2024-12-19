@@ -1,8 +1,6 @@
 import bpy, os, sys # type: ignore
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 
-import subprocess
-from .functions import modules as mod
 from .functions.basic_functions import ParamRemoveOperator, ParamAddOperator, reset_selection, dump_dict_to_json, dict_from_json, redraw
 from .functions.caching_local import LocalCache
 
