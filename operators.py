@@ -3,7 +3,6 @@ import numpy as np
 
 import os, subprocess, time, tempfile, multiprocessing, json
 from collections import namedtuple
-from functools import partial
 
 from .functions import prusaslicer_funcs as psf 
 
@@ -105,16 +104,23 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         vertices = global_tris[:, :3, :]
         min_coords, max_coords = vertices.min(axis=(0, 1)), vertices.max(axis=(0, 1))
         bed_size = gf.get_bed_size(loader.config_with_overrides['bed_shape']) if 'bed_shape' in loader.config_with_overrides else (0, 0)
-        transform = -((min_coords + max_coords) / 2) + np.array([bed_size[0]/2, bed_size[1]/2, 0])
+        transform = (min_coords*(-0.5, -0.5, 1) + max_coords*(-0.5, -0.5, 0)) + np.array([bed_size[0]/2, bed_size[1]/2, 0])
+
+        all_tris = []
 
         for i, tris in enumerate(tris_by_object):
             tris_transformed = bf.transform_tris(tris, transform)
-            bf.save_stl(tris_transformed, paths.stl_paths[i])
-            temp_files.append(paths.stl_paths[i])
+            all_tris.append(tris_transformed)
+
+        # Combine all transformed triangles into a single numpy array
+        all_tris_combined = np.concatenate(all_tris, axis=0)
+
+        bf.save_stl(all_tris_combined, paths.stl_path)
+        temp_files.append(paths.stl_path)
 
         if not loader.config_dict:
             show_progress(pg, 100, 'Opening PrusaSlicer')
-            command = paths.stl_paths
+            command = paths.stl_path
 
             results_queue = multiprocessing.Queue()
             process = multiprocessing.Process(target=run_slice, args=(command, None, results_queue))
@@ -128,7 +134,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
         if self.mode == "open":
             show_progress(pg, 100, 'Opening PrusaSlicer')
-            command = paths.stl_paths + ["--load", paths.ini_path] + ["--dont-arrange"]
+            command = paths.stl_path + ["--load", paths.ini_path] + ["--dont-arrange"]
 
             process = multiprocessing.Process(target=psf.exec_prusaslicer, args=(command, prusaslicer_path,))
             process.start()
@@ -138,7 +144,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
         if os.path.exists(paths.gcode_temp_path) and os.path.exists(paths.json_temp_path):
             cached_data = dict_from_json(paths.json_temp_path)
-            stl_chk = bf.calculate_md5(paths.stl_paths)
+            stl_chk = bf.calculate_md5([paths.stl_path])
             ini_chk = bf.calculate_md5([paths.ini_path])
 
             if stl_chk == cached_data.get('stl_chk') and ini_chk == cached_data.get('ini_chk'):
@@ -162,11 +168,9 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
                 "--load", paths.ini_path, 
                 "-g",
                 "--dont-arrange",
-                "--merge",
                 "--output", os.path.join(paths.gcode_temp_path)
             ]
-            for path in paths.stl_paths:
-                command += [path]
+            command += [paths.stl_path]
 
             results_queue = multiprocessing.Queue()
             process = multiprocessing.Process(target=run_slice, args=(command, paths, results_queue))
@@ -200,7 +204,7 @@ def slicing_queue(pg, paths, results_queue):
 
 
 def determine_paths(config, obj_names, mountpoint):
-    paths = namedtuple('Paths', ['ini_path', 'stl_paths', 'stl_temp_path', 'gcode_path', 'gcode_temp_path', 'json_temp_path'], defaults=[""]*5)
+    paths = namedtuple('Paths', ['ini_path', 'stl_path', 'stl_temp_path', 'gcode_path', 'gcode_temp_path', 'json_temp_path'], defaults=[""]*5)
 
     base_filename = "-".join(bf.names_array_from_objects(obj_names))
 
@@ -215,7 +219,7 @@ def determine_paths(config, obj_names, mountpoint):
     temp_dir = tempfile.gettempdir()
 
     blendfile_directory = os.path.dirname(bpy.data.filepath)
-    paths.stl_paths = [os.path.join(temp_dir, base_filename + "_" + str(i) + ".stl") for i, obj in enumerate(obj_names)]
+    paths.stl_path = os.path.join(temp_dir, base_filename + ".stl")
 
     if mountpoint:
         gcode_dir = mountpoint
@@ -243,7 +247,7 @@ def run_slice(command, paths, results_queue = None):
         
         if paths.gcode_temp_path:
             checksums = {
-                "stl_chk": bf.calculate_md5(paths.stl_paths),
+                "stl_chk": bf.calculate_md5([paths.stl_path]),
                 "ini_chk": bf.calculate_md5([paths.ini_path])
             }
             with open(paths.json_temp_path, 'w') as json_file:
